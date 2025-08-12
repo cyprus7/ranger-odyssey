@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 24 }
+        with: { node-version: 22 }
       - run: npm ci --prefix backend && npm test --prefix backend -- --coverage
       - run: npm ci --prefix frontend && npm test --prefix frontend -- --coverage
       - name: Build images

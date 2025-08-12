@@ -1,10 +1,21 @@
 image:
-  repository: ghcr.io/ORG/REPO
+  repository: ghcr.io/cyprus7/ranger-odyssey
   tag: latest
 
-host: sandbox.example.com
-tlsSecretName: tls-sandbox-example-com
+publicHost: sandbox-quests.tmbot.cc
+apiPath: /api
+
+ingress:
+  enabled: false
 
 app:
   replicas: 2
-  canary: false
+  canary: true
+
+frontend:
+  replicas: 1
+  resources: {}
+
+backend:
+  replicas: 1
+  resources: {}
