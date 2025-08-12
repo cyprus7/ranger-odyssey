@@ -1,0 +1,10 @@
+image:
+  repository: ghcr.io/ORG/REPO
+  tag: latest
+
+host: ranger.tmbot.cc
+tlsSecretName: tls-ranger-tmbot-cc
+
+app:
+  replicas: 4
+  canary: true

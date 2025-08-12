@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-gw
+  namespace: prod
+spec:
+  acme:
+    email: you@example.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: le-prod-gw
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: web

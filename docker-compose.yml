@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: ranger_quests_backend
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    container_name: ranger_quests_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://backend:3001"
+      NEXT_PUBLIC_APP_TITLE: "${APP_TITLE:-GeoQuests}"
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:3000"

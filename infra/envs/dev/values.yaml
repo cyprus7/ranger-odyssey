@@ -1,0 +1,8 @@
+image:
+  repository: ghcr.io/ORG/REPO
+  tag: latest
+ingress:
+  host: dev.example.com
+app:
+  replicas: 1
+  canary: false

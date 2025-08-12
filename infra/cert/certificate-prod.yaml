@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ranger-tmbot-cc
+  namespace: prod
+spec:
+  secretName: tls-ranger-tmbot-cc
+  dnsNames: [ "ranger.tmbot.cc" ]
+  issuerRef:
+    name: letsencrypt-gw
+    kind: Issuer

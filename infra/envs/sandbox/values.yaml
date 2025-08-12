@@ -1,0 +1,10 @@
+image:
+  repository: ghcr.io/ORG/REPO
+  tag: latest
+
+host: sandbox.example.com
+tlsSecretName: tls-sandbox-example-com
+
+app:
+  replicas: 2
+  canary: false

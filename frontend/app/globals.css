@@ -1,0 +1,26 @@
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --muted: #707579;
+  --primary: #3390ec;
+  --footer-bg: #111214;
+  --footer-active: #1b1c1f;
+}
+
+* { box-sizing: border-box; }
+html, body { padding: 0; margin: 0; height: 100%; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app { min-height: 100dvh; display: flex; flex-direction: column; }
+.main { flex: 1 1 auto; padding: 16px; }
+
+.footer { position: sticky; bottom: 0; left: 0; right: 0; background: var(--footer-bg); border-top: 1px solid #222428; }
+.footer-nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 6px; }
+.footer-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border: none; background: transparent; color: #fff; font-size: 12px; border-radius: 12px; text-decoration: none; }
+.footer-btn.active { background: var(--footer-active); }
+
+.loading { display: grid; place-items: center; height: 60dvh; font-weight: 600; color: var(--muted); }
