@@ -29,7 +29,7 @@ jobs:
         run: |
           ENV_DIR=$([ "${{ github.ref_name }}" = "main" ] && echo infra/envs/prod || echo infra/envs/sandbox)
           pip install yq >/dev/null 2>&1 || true
-          yq -i '.image.tag = "${{ github.sha }}"' "$ENV_DIR/values.yaml"
+          yq -iy '.image.tag = "${{ github.sha }}"' "$ENV_DIR/values.yaml"
 
       - name: Commit & push
         run: |
