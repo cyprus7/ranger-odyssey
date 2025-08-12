@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/ORG/REPO
-  tag: 2abf9f19286b1bf55d49e9ab8378ac7e1b0e91bf
+  tag: f5a867cd15a130b88f50c0386be9b825f562f24c
 host: quests.tmbot.cc
 tlsSecretName: tls-quests-tmbot-cc
 app:
