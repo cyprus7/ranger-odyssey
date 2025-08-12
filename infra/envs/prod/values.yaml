@@ -2,7 +2,7 @@ image:
   repository: ghcr.io/ORG/REPO
   tag: latest
 
-host: ranger.tmbot.cc
+host: quests.tmbot.cc
 tlsSecretName: tls-ranger-tmbot-cc
 
 app:

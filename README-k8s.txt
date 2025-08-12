@@ -1,4 +1,4 @@
-# Gateway API setup for ranger.tmbot.cc
+# Gateway API setup for quests.tmbot.cc
 
 1) Install Envoy Gateway (NodePort 32443)
    helm repo add envoyproxy https://charts.envoyproxy.io
@@ -17,12 +17,12 @@
    kubectl -n prod apply -f infra/cert/certificate-prod.yaml
 
 4) DNS
-   A record: ranger.tmbot.cc -> YOUR_SERVER_IP
+   A record: quests.tmbot.cc -> YOUR_SERVER_IP
 
 5) Expose NodePort 32443 from the host (simple options)
    - Open firewall and DNAT 443 -> 32443, or
-   - Run host Nginx to proxy https://ranger.tmbot.cc to https://127.0.0.1:32443
+   - Run host Nginx to proxy https://quests.tmbot.cc to https://127.0.0.1:32443
 
 6) BotFather
-   Web App URL: https://ranger.tmbot.cc/
-   Frontend calls API at the same origin: https://ranger.tmbot.cc/api
+   Web App URL: https://quests.tmbot.cc/
+   Frontend calls API at the same origin: https://quests.tmbot.cc/api

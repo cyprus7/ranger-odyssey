@@ -5,7 +5,7 @@ metadata:
   namespace: prod
 spec:
   secretName: tls-ranger-tmbot-cc
-  dnsNames: [ "ranger.tmbot.cc" ]
+  dnsNames: [ "quests.tmbot.cc" ]
   issuerRef:
     name: letsencrypt-gw
     kind: Issuer
