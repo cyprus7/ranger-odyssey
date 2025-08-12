@@ -4,7 +4,7 @@ metadata:
   name: ranger-tmbot-cc
   namespace: prod
 spec:
-  secretName: tls-ranger-tmbot-cc
+  secretName: tls-quests-tmbot-cc
   dnsNames: [ "quests.tmbot.cc" ]
   issuerRef:
     name: letsencrypt-gw
