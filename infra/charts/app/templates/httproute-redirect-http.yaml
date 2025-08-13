@@ -7,7 +7,7 @@ spec:
     - {{ .Values.host | quote }}
   parentRefs:
     - name: web
-      sectionName: http     # только HTTP
+      sectionName: http
   rules:
     - matches:
         - path:

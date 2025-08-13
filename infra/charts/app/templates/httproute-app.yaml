@@ -7,9 +7,8 @@ spec:
     - {{ .Values.host | quote }}
   parentRefs:
     - name: web
-      sectionName: https   # только HTTPS
+      sectionName: https
   rules:
-    # /api -> service: api:80 (внутри кластера HTTP)
     - matches:
         - path:
             type: PathPrefix
@@ -17,8 +16,6 @@ spec:
       backendRefs:
         - name: api
           port: 80
-
-    # всё остальное -> service: frontend:80
     - matches:
         - path:
             type: PathPrefix
