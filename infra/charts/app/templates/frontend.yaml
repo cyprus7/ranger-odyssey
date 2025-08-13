@@ -24,11 +24,10 @@ spec:
             - containerPort: 3000
               name: http
           env:
-            {{- /* Берём домен из publicHost или, для совместимости, из ingress.host */}}
-            {{- $host := coalesce .Values.publicHost (dig "ingress" "host" "" .Values) -}}
+            {{- $host := coalesce .Values.publicHost (dig .Values "ingress" "host" "") -}}
             {{- $host := required "set either .Values.publicHost (preferred) or .Values.ingress.host" $host -}}
             - name: NEXT_PUBLIC_API_URL
-              value: "https://{{ $host }}{{ default \"/api\" .Values.apiPath }}"
+              value: {{ printf "https://%s%s" $host (default "/api" .Values.apiPath) | quote }}
           resources:
             {{- toYaml (.Values.frontend.resources | default dict) | nindent 12 }}
 ---
