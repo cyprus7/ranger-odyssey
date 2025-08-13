@@ -7,17 +7,17 @@ spec:
     type: Kubernetes
     kubernetes:
       envoyService:
+        externalTrafficPolicy: Cluster
         patch:
           type: StrategicMerge
           value:
             spec:
-              type: NodePort
+              type: LoadBalancer
               ports:
                 - name: http
                   port: 80
                   protocol: TCP
                   targetPort: 80
-                  nodePort: 32080
                 - name: https
                   port: 443
                   protocol: TCP
