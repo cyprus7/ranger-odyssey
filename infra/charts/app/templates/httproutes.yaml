@@ -3,45 +3,50 @@ kind: HTTPRoute
 metadata:
   name: route-quests
 spec:
-  hostnames: [ {{ .Values.host | quote }} ]
+  hostnames:
+    - {{ .Values.host | quote }}
   parentRefs:
-    # HTTP listener
+    # HTTP listener (для ACME и редиректа)
     - name: web
       sectionName: http
-    # HTTPS listener
+    # HTTPS listener (основной трафик)
     - name: web
       sectionName: https
   rules:
-    # --- HTTP listener rules ---
-    # 1. ACME challenge (порт 80, без редиректа)
+    # 1. ACME HTTP-01 challenge — пропускаем без редиректа
     - matches:
         - path:
             type: PathPrefix
             value: /.well-known/acme-challenge/
       backendRefs:
-        - name: cm-acme-http-solver
+        - name: {{ printf "cm-acme-http-solver-%%s" .Release.Namespace }}
           port: 8089
 
-    # 2. Остальное на 80 -> редирект на HTTPS
+    # 2. HTTP -> HTTPS редирект (всё, что не challenge)
     - matches:
-        - path: { type: PathPrefix, value: / }
+        - path:
+            type: PathPrefix
+            value: /
       filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
             statusCode: 301
 
-    # --- HTTPS listener rules ---
-    # /api -> api:80
+    # 3. /api через HTTPS -> API сервис (HTTP:80 внутри кластера)
     - matches:
-        - path: { type: PathPrefix, value: {{ default "/api" .Values.apiPath | quote }} }
+        - path:
+            type: PathPrefix
+            value: {{ default "/api" .Values.apiPath | quote }}
       backendRefs:
         - name: api
           port: 80
 
-    # остальное -> frontend:80
+    # 4. Остальное через HTTPS -> frontend сервис (HTTP:80 внутри кластера)
     - matches:
-        - path: { type: PathPrefix, value: / }
+        - path:
+            type: PathPrefix
+            value: /
       backendRefs:
         - name: frontend
           port: 80
