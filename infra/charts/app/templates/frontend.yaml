@@ -24,9 +24,8 @@ spec:
             - containerPort: 3000
               name: http
           env:
-            {{- $host := required "set either .Values.publicHost (preferred) or .Values.ingress.host" $host -}}
             - name: NEXT_PUBLIC_API_URL
-              value: {{ printf "https://%s%s" $host (default "/api" .Values.apiPath) | quote }}
+              value: {{ printf "https://%s%s" .Values.publicHost (default "/api" .Values.apiPath) | quote }}
           resources:
             {{- toYaml (.Values.frontend.resources | default dict) | nindent 12 }}
 ---
