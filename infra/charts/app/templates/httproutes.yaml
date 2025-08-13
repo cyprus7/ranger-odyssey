@@ -5,12 +5,24 @@ metadata:
 spec:
   hostnames: [ {{ .Values.host | quote }} ]
   parentRefs:
+    # HTTP listener
     - name: web
       sectionName: http
+    # HTTPS listener
     - name: web
       sectionName: https
   rules:
-    # HTTP -> HTTPS редирект
+    # --- HTTP listener rules ---
+    # 1. ACME challenge (порт 80, без редиректа)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /.well-known/acme-challenge/
+      backendRefs:
+        - name: cm-acme-http-solver
+          port: 8089
+
+    # 2. Остальное на 80 -> редирект на HTTPS
     - matches:
         - path: { type: PathPrefix, value: / }
       filters:
@@ -19,6 +31,7 @@ spec:
             scheme: https
             statusCode: 301
 
+    # --- HTTPS listener rules ---
     # /api -> api:80
     - matches:
         - path: { type: PathPrefix, value: {{ default "/api" .Values.apiPath | quote }} }
@@ -27,11 +40,6 @@ spec:
           port: 80
 
     # остальное -> frontend:80
-    - matches:
-        - path: { type: PathPrefix, value: / }
-      backendRefs:
-        - name: frontend
-          port: 80
     - matches:
         - path: { type: PathPrefix, value: / }
       backendRefs:
