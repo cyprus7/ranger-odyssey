@@ -17,3 +17,7 @@ frontend:
 backend:
   replicas: 2
   resources: {}
+externalSecrets:
+  enabled: true
+  storeName: vault-kv
+  path: app/prod
