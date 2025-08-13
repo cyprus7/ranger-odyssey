@@ -3,4 +3,4 @@ kind: GatewayClass
 metadata:
   name: eg
 spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller

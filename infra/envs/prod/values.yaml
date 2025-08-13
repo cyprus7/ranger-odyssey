@@ -4,6 +4,10 @@ image:
 host: quests.tmbot.cc
 tlsSecretName: quests-tmbot-cc-tls
 apiPath: /api
+
+letsencrypt:
+  email: letsencrypt@mail.ru
+
 ingress:
   enabled: false
 app:

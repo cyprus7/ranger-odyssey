@@ -10,12 +10,7 @@ spec:
     - name: web
       sectionName: https
   rules:
-    # ACME исключение на HTTP (не редиректим)
-    - matches:
-        - path: { type: PathPrefix, value: /.well-known/acme-challenge/ }
-      backendRefs: []  # cert-manager создаст свой временный HTTPRoute
-
-    # HTTP -> HTTPS редирект (кроме ACME)
+    # HTTP -> HTTPS редирект
     - matches:
         - path: { type: PathPrefix, value: / }
       filters:
@@ -24,14 +19,19 @@ spec:
             scheme: https
             statusCode: 301
 
-    # /api -> сервис api:80 (на HTTPS)
+    # /api -> api:80
     - matches:
         - path: { type: PathPrefix, value: {{ default "/api" .Values.apiPath | quote }} }
       backendRefs:
         - name: api
           port: 80
 
-    # всё остальное -> frontend:80 (на HTTPS)
+    # остальное -> frontend:80
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: frontend
+          port: 80
     - matches:
         - path: { type: PathPrefix, value: / }
       backendRefs:

@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-gw
+  namespace: {{ .Release.Namespace }}
+spec:
+  acme:
+    email: {{ required "set .Values.letsencrypt.email" .Values.letsencrypt.email }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: le-{{ .Release.Namespace }}-gw
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: web
