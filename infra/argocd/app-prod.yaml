@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
-metadata: { name: geo-prod, namespace: argocd }
+metadata: { name: quests-prod, namespace: argocd }
 spec:
   project: default
   source:
-    repoURL: https://github.com/ORG/REPO.git
+    repoURL: https://github.com/cyprus7/ranger-odyssey.git
     targetRevision: HEAD
     path: infra/charts/app
     helm:
