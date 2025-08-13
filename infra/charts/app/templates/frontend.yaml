@@ -24,7 +24,7 @@ spec:
             - containerPort: 3000
               name: http
           env:
-            {{- $host := coalesce .Values.publicHost (dig .Values "ingress" "host" "") -}}
+            {{- $host := .Values.publicHost | default (index .Values.ingress "host" | default "") -}}
             {{- $host := required "set either .Values.publicHost (preferred) or .Values.ingress.host" $host -}}
             - name: NEXT_PUBLIC_API_URL
               value: {{ printf "https://%s%s" $host (default "/api" .Values.apiPath) | quote }}
