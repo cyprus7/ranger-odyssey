@@ -8,3 +8,8 @@ tlsSecretName: tls-sandbox-example-com
 app:
   replicas: 2
   canary: false
+
+externalSecrets:
+  enabled: false      # chart‐level default
+  storeName: vault-kv
+  path: ""            # must be set in env values if enabled
