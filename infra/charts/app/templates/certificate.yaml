@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ printf "cert-%s" .Values.host | replace "." "-" | quote }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ .Values.tlsSecretName | quote }}
+  issuerRef:
+    name: letsencrypt-gw
+    kind: Issuer
+  dnsNames:
+    - {{ .Values.host | quote }}

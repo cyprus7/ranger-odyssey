@@ -1,22 +1,39 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: frontend
+  name: route-quests
 spec:
   hostnames: [ {{ .Values.host | quote }} ]
-  parentRefs: [ { name: web } ]
+  parentRefs:
+    - name: web
+      sectionName: http
+    - name: web
+      sectionName: https
   rules:
-    - matches: [ { path: { type: PathPrefix, value: "/" } } ]
-      backendRefs: [ { name: frontend, port: 80 } ]
+    # ACME исключение на HTTP (не редиректим)
+    - matches:
+        - path: { type: PathPrefix, value: /.well-known/acme-challenge/ }
+      backendRefs: []  # cert-manager создаст свой временный HTTPRoute
 
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: api
-spec:
-  hostnames: [ {{ .Values.host | quote }} ]
-  parentRefs: [ { name: web } ]
-  rules:
-    - matches: [ { path: { type: PathPrefix, value: "/api" } } ]
-      backendRefs: [ { name: api, port: 80 } ]
+    # HTTP -> HTTPS редирект (кроме ACME)
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+
+    # /api -> сервис api:80 (на HTTPS)
+    - matches:
+        - path: { type: PathPrefix, value: {{ default "/api" .Values.apiPath | quote }} }
+      backendRefs:
+        - name: api
+          port: 80
+
+    # всё остальное -> frontend:80 (на HTTPS)
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: frontend
+          port: 80

@@ -4,7 +4,18 @@ metadata:
   name: web
 spec:
   gatewayClassName: eg
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: web-proxy
   listeners:
+    - name: http
+      hostname: {{ .Values.host | quote }}
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces: { from: Same }
     - name: https
       hostname: {{ .Values.host | quote }}
       port: 443
@@ -12,4 +23,6 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: {{ .Values.tlsSecretName }}
+          - name: {{ .Values.tlsSecretName | quote }}
+      allowedRoutes:
+        namespaces: { from: Same }

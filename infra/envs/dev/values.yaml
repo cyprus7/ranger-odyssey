@@ -2,7 +2,9 @@ image:
   repository: ghcr.io/cyprus7/ranger-odyssey
   tag: latest
 
-publicHost: dev-quests.tmbot.cc
+host: dev-quests.tmbot.cc
+tlsSecretName: dev-quests-tmbot-cc-tls
+
 apiPath: /api
 
 ingress:
