@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import FooterNav from '../components/FooterNav';
+import logger from '../utils/logger';
 
 type Quest = { id: string; title: string; subtitle?: string; progress?: number };
 type QuestState = {
@@ -24,21 +25,34 @@ export default function QuestsPage() {
   const api = process.env.NEXT_PUBLIC_API_URL || '';
 
   useEffect(() => {
-    // Fetch quest list
+    logger.info('Fetching quest list...');
     fetch(`${api}/api/quests`)
       .then(r => r.json())
-      .then(setQuests)
-      .catch(e => setError(String(e)));
+      .then(data => {
+        logger.info({ quests: data }, 'Quest list fetched');
+        setQuests(data);
+      })
+      .catch(e => {
+        logger.error({ error: e }, 'Failed to fetch quest list');
+        setError(String(e));
+      });
 
-    // Fetch current quest state
+    logger.info('Fetching current quest state...');
     fetch(`${api}/api/quests/state`)
       .then(r => r.json())
-      .then(setQuestState)
-      .catch(e => setError(String(e)))
+      .then(data => {
+        logger.info({ questState: data }, 'Quest state fetched');
+        setQuestState(data);
+      })
+      .catch(e => {
+        logger.error({ error: e }, 'Failed to fetch quest state');
+        setError(String(e));
+      })
       .finally(() => setLoading(false));
   }, [api]);
 
   const handleChoice = (choiceId: string) => {
+    logger.info({ choiceId }, 'Submitting quest choice...');
     setLoading(true);
     fetch(`${api}/api/quests/choice`, {
       method: 'PUT',
@@ -47,22 +61,30 @@ export default function QuestsPage() {
     })
       .then(r => r.json())
       .then(data => {
-        // Update the state with the new scene
+        logger.info({ result: data }, 'Quest choice submitted');
         setQuestState(prev => prev ? {
           ...prev,
           currentScene: data.newScene,
           choices: [] // Clear choices after selection
         } : null);
-        
-        // Reload the quest state after a brief delay
         setTimeout(() => {
+          logger.info('Refreshing quest state...');
           fetch(`${api}/api/quests/state`)
             .then(r => r.json())
-            .then(setQuestState)
-            .catch(e => setError(String(e)));
+            .then(data => {
+              logger.info({ questState: data }, 'Quest state refreshed');
+              setQuestState(data);
+            })
+            .catch(e => {
+              logger.error({ error: e }, 'Failed to refresh quest state');
+              setError(String(e));
+            });
         }, 2000);
       })
-      .catch(e => setError(String(e)))
+      .catch(e => {
+        logger.error({ error: e }, 'Failed to submit quest choice');
+        setError(String(e));
+      })
       .finally(() => setLoading(false));
   };
 
@@ -121,16 +143,6 @@ export default function QuestsPage() {
                       <div style={{width: `${q.progress}%`, height: 8, borderRadius: 999, background: '#3390ec'}}/>
                     </div>
                   </div>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
-      </main>
-      <FooterNav />
-    </>
-  );
-}
                 )}
               </article>
             ))}
