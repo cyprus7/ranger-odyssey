@@ -14,10 +14,6 @@ type QuestState = {
     id: string;
     text: string;
   }[];
-  timer?: {
-    ends_at: string;
-    duration_seconds: number;
-  };
 };
 
 export default function QuestsPage() {
@@ -88,12 +84,6 @@ export default function QuestsPage() {
             )}
             <p>{questState.currentScene.description}</p>
             
-            {questState.timer && (
-              <div style={{margin: '16px 0', textAlign: 'center', color: 'var(--muted)'}}>
-                Time remaining: {formatTimeRemaining(questState.timer.ends_at)}
-              </div>
-            )}
-            
             {questState.choices.length > 0 && (
               <div className="choices" style={{display: 'grid', gap: 8}}>
                 {questState.choices.map(choice => (
@@ -131,6 +121,16 @@ export default function QuestsPage() {
                       <div style={{width: `${q.progress}%`, height: 8, borderRadius: 999, background: '#3390ec'}}/>
                     </div>
                   </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
+      <FooterNav />
+    </>
+  );
+}
                 )}
               </article>
             ))}

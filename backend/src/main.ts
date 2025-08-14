@@ -1,8 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { Logger } from 'nestjs-pino';
+import { TraceContextInterceptor } from './observability/trace-context.interceptor';
+import { ObservabilityLoggingModule } from './observability/logging.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  // Use global logger from nestjs-pino (provided by ObservabilityLoggingModule)
+  app.useLogger(app.get(Logger));
+
+  // Apply the trace context interceptor globally
+  app.useGlobalInterceptors(new TraceContextInterceptor(app.get(Logger)));
+
+  // Enable CORS and set global prefix as before
   const port = 3001;
   const origin = process.env.CORS_ORIGIN || '*';
   app.enableCors({
@@ -11,6 +23,8 @@ async function bootstrap() {
   });
   app.setGlobalPrefix('api');
   await app.listen(port);
-  console.log(`Backend listening on :${port}`);
+
+  const logger = app.get(Logger);
+  logger.info(`Backend listening on :${port}`);
 }
 bootstrap();
