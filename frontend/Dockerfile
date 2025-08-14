@@ -1,4 +1,3 @@
-# 1) Build
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
@@ -6,7 +5,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# 2) Runtime (standalone)
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
