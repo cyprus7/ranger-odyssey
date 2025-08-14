@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 @Module({
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL || 'info',
-        // JSON output without color: do not configure pino-pretty
-        genReqId: (req) => uuidv4(),
+        genReqId: (req) => randomUUID(),
         customLogLevel: (req, res, err) => {
           if (res.statusCode >= 500 || err) return 'error';
           return 'info';
