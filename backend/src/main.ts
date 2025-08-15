@@ -1,9 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
-import { PinoLogger } from 'nestjs-pino';
 import { TraceContextInterceptor } from './observability/trace-context.interceptor';
-import { ObservabilityLoggingModule } from './observability/logging.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -25,8 +23,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   await app.listen(port);
 
-  // Cast Logger to PinoLogger to use the `info` method
-  const logger = app.get(Logger) as PinoLogger;
-  logger.info(`Backend listening on :${port}`);
+  // Use the `log` method for logging
+  const logger = app.get(Logger);
+  logger.log(`Backend listening on :${port}`);
 }
+
 bootstrap();
