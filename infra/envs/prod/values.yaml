@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/cyprus7/ranger-odyssey
-  tag: e52ce31ca3db65193e40e48cde7ae4547ce44ef8
+  tag: e725c6735b8a9f82ae394b58aecfb3172cf49d68
 host: quests.tmbot.cc
 tlsSecretName: quests-tmbot-cc-tls
 apiPath: /api
