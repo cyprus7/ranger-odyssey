@@ -39,30 +39,7 @@ function QuestsIcon() {
     return (<svg width="25" height="24" fill="none"><g stroke="#fff" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.763 10.163c-.501.349-1.109-.266-.755-.763a5.45 5.45 0 0 0 .163-6.07l-.091-.143c-.325-.514.273-1.113.79-.787l.165.107a5.47 5.47 0 0 0 6.061-.124c.503-.352 1.114.265.759.767a5.47 5.47 0 0 0-.19 6.06l.105.169c.321.517-.283 1.11-.794.779l-.142-.095a5.45 5.45 0 0 0-6.073.102z"/><circle cx="6.5" cy="17" r="3.25"/><circle cx="18.5" cy="17" r="3.25"/><circle cx="18.5" cy="7" r="3.25"/></g></svg>)
 }
 function RewardsIcon() {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <path
-                d="M8 4h8v2a3 3 0 0 0 3 3h1v1a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9h1a3 3 0 0 0 3-3V4z"
-                stroke="#fff"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <path
-                d="M10 14v2a2 2 0 0 0 4 0v-2M9 21h6M12 19v2"
-                stroke="#fff"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    )
+    return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" enable-background="new 0 0 50 50"><path d="M28.6 29.4c3-2.3 7.4-5.7 7.4-18.4v-1H14v1c0 12.7 4.5 16.1 7.4 18.4 1.7 1.3 2.6 2 2.6 3.6v3c-1.6.2-3.2.8-3.8 2H18c-1.1 0-2 .9-2 2h18c0-1.1-.9-2-2-2h-2.2c-.6-1.2-2.1-1.8-3.8-2v-3c0-1.6.8-2.3 2.6-3.6zm-3.6.5c-.6-.8-1.5-1.5-2.3-2.1-2.7-2.1-6.4-4.9-6.6-15.8h18c-.2 10.8-3.9 13.7-6.6 15.8-1 .7-1.9 1.3-2.5 2.1z"/><path d="M18.8 27C18.7 27 8 24.7 8 13v-1h7v2h-5c.6 9.2 9.1 11 9.2 11l-.4 2z"/><path d="M31.2 27l-.4-2c.4-.1 8.6-1.9 9.2-11h-5v-2h7v1c0 11.7-10.7 14-10.8 14z"/></svg>)
 }
 function WalletIcon() {
     return (<svg width="24" height="24" fill="none"><path stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0-2 2m0 0a2 2 0 0 0 2 2h15a1 1 0 0 1 1 1v4M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4m0-4h-3a2 2 0 0 0 0 4h3m0-4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1"/></svg>)
