@@ -121,12 +121,15 @@ export class QuestsService {
     }
 
     getRewards() {
-        // Stub: только первый день с наградой
+        // STUB
         return [
-            { day: 1, bonus_code: 'AWAKE-CRYSTAL', claimed: true },
-            { day: 2, bonus_code: 'CASINO50', claimed: false },
-            { day: 3, bonus_code: 'PART2023', claimed: false },
-            { day: 4, bonus_code: 'RANGER24', claimed: false, locked: true }
+            { day: 1, bonus_code: 'AWAKE-DAY1-FREESPIN50', claimed: false, locked: true },
+            { day: 2, bonus_code: 'TOWER-DAY2-BONUS20', claimed: false, locked: true },
+            { day: 3, bonus_code: 'MARKET-DAY3-LOST50', claimed: false, locked: true },
+            { day: 4, bonus_code: 'LABYRINTH-DAY4-KEY10', claimed: false, locked: true },
+            { day: 5, bonus_code: 'ABYSS-DAY5-CRYSTAL30', claimed: false, locked: true },
+            { day: 6, bonus_code: 'TREE-DAY6-CHOICE25', claimed: false, locked: true },
+            { day: 7, bonus_code: 'VOID-DAY7-END100', claimed: false, locked: true }
         ]
     }
 }
