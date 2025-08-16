@@ -40,23 +40,22 @@ function QuestsIcon() {
 }
 function RewardsIcon() {
     return (
-        <svg width="25" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
             <path
-                d="M12 21c-3.866 0-7-2.239-7-5v-4c0-2.761 3.134-5 7-5s7 2.239 7 5v4c0 2.761-3.134 5-7 5z"
+                d="M8 3h8v3a4 4 0 0 0 4 4h1v2a5 5 0 0 1-5 5h-1.5a4.5 4.5 0 0 1-9 0H5a5 5 0 0 1-5-5V10h1a4 4 0 0 0 4-4V3z"
                 stroke="#fff"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
             <path
-                d="M8 10V7a4 4 0 1 1 8 0v3"
-                stroke="#fff"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <path
-                d="M10 14h4"
+                d="M12 18v3M9 21h6"
                 stroke="#fff"
                 strokeWidth="1.5"
                 strokeLinecap="round"

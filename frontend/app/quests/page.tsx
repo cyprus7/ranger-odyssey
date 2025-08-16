@@ -79,7 +79,7 @@ export default function QuestsPage() {
                             logger.error({ error: e }, 'Failed to refresh quest state')
                             setError(String(e))
                         })
-                }, 2000)
+                }, 20000)
             })
             .catch(e => {
                 logger.error({ error: e }, 'Failed to submit quest choice')
