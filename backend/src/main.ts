@@ -11,14 +11,14 @@ async function bootstrap() {
     app.useLogger(app.get(Logger))
 
     // Apply the trace context interceptor globally
-    app.useGlobalInterceptors(new TraceContextInterceptor(app.get(Logger)))
+    app.useGlobalInterceptors(new TraceContextInterceptor())
 
     // Enable CORS and set global prefix as before
     const port = 3001
     const origin = process.env.CORS_ORIGIN || '*'
     app.enableCors({
         origin: origin === '*' ? true : origin.split(',').map(s => s.trim()),
-        credentials: true
+        credentials: true,
     })
     app.setGlobalPrefix('api')
     await app.listen(port)
