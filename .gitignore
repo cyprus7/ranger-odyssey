@@ -24,3 +24,4 @@ build/
 
 # Miscellaneous
 .DS_Store
+.eslintcache
