@@ -48,14 +48,14 @@ function RewardsIcon() {
             viewBox="0 0 24 24"
         >
             <path
-                d="M8 3h8v3a4 4 0 0 0 4 4h1v2a5 5 0 0 1-5 5h-1.5a4.5 4.5 0 0 1-9 0H5a5 5 0 0 1-5-5V10h1a4 4 0 0 0 4-4V3z"
+                d="M8 4h8v2a3 3 0 0 0 3 3h1v1a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9h1a3 3 0 0 0 3-3V4z"
                 stroke="#fff"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
             <path
-                d="M12 18v3M9 21h6"
+                d="M10 14v2a2 2 0 0 0 4 0v-2M9 21h6M12 19v2"
                 stroke="#fff"
                 strokeWidth="1.5"
                 strokeLinecap="round"
