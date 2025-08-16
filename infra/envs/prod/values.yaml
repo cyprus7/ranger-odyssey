@@ -10,7 +10,7 @@ ingress:
   enabled: false
 app:
   replicas: 4
-  canary: true
+  canary: false
 frontend:
   replicas: 2
   resources: {}
