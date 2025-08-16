@@ -5,12 +5,8 @@ gateway:
 controller:
   resources:
     requests: { cpu: "100m", memory: "128Mi" }
-    limits:   { cpu: "500m", memory: "512Mi" }
-        port: 443
-        protocol: TCP
-        nodePort: 32443
-        targetPort: 443
-controller:
-  resources:
-    requests: { cpu: "100m", memory: "128Mi" }
     limits: { cpu: "500m", memory: "512Mi" }
+  service:
+    port: 443
+    protocol: TCP
+    targetPort: 443
