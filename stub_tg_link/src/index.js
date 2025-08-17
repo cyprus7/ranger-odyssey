@@ -107,7 +107,24 @@ app.get('/tg-link-generate', (req, res) => {
     }
     .out.visible { display: block; }
     .out .row { margin-bottom: 10px; }
-    .link a { color: var(--accent); word-break: break-all; text-decoration: none; }
+    .link a {
+      display: inline-block;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      text-decoration: none;
+      box-shadow: 0 6px 18px rgba(0,102,214,0.18);
+      word-break: break-all;
+      margin-top: 8px;
+      letter-spacing: 0.01em;
+      transition: background 0.2s;
+    }
+    .link a:hover, .link a:focus {
+      background: #0056b3;
+    }
     @media (min-width: 640px) {
       .card { text-align: left; }
       h3 { font-size: 18px; color: var(--muted); }
@@ -149,7 +166,7 @@ app.get('/tg-link-generate', (req, res) => {
 
           const linkDiv = document.createElement('div');
           linkDiv.className = 'row link';
-          linkDiv.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener">Open tg link</a>';
+          linkDiv.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener" aria-label="Open Telegram Bot link"><strong>Open tgBot link</strong></a>';
 
           out.appendChild(rawDiv);
           out.appendChild(base64Div);
