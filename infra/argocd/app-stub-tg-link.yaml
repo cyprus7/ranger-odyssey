@@ -4,7 +4,7 @@ metadata:
   name: stub-tg-link
   namespace: argocd
 spec:
-  project: stub-tg-link
+  project: default
   source:
     repoURL: 'https://github.com/cyprus7/ranger-odyssey.git'
     targetRevision: HEAD
