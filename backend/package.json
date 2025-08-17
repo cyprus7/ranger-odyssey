@@ -1,5 +1,5 @@
 {
-  "name": "ranger-quests-backend",
+  "name": "quests-backend",
   "version": "1.0.0",
   "scripts": {
     "start": "node dist/main.js",
