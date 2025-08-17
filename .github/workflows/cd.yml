@@ -34,8 +34,11 @@ jobs:
           # update main app image tag in env values (existing behavior)
           yq -iy '.image.tag = "'${{ github.sha }}'"' "$ENV_DIR/values.yaml"
           # update stub deployment image to new sha (so ArgoCD kustomize sees new image)
-          yq -iy '.spec.template.spec.containers[0].image = "ghcr.io/'"${${{ github.repository }}}"'/stub_tg_link:'${{ github.sha }}'"' infra/apps/stub_tg_link/deployment.yaml || \
-            yq -iy '.spec.template.spec.containers[0].image = "ghcr.io/'"${{ github.repository }}"'/stub_tg_link:'${{ github.sha }}'"' infra/apps/stub_tg_link/deployment.yaml
+          NEW_IMAGE="ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }}"
+          # Replace the image line in deployment.yaml (works for common formatting "image: <value>")
+          if grep -q "infra/apps/stub_tg_link/deployment.yaml"; then
+            sed -i -E "s|image: .*stub_tg_link:.*|image: ${NEW_IMAGE}|g" infra/apps/stub_tg_link/deployment.yaml || true
+          fi
 
       - name: Commit & push
         run: |
