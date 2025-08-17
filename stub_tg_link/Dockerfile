@@ -3,7 +3,7 @@ WORKDIR /app
 
 # copy manifest and install deps
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm i --only=production
 
 # copy app code
 COPY src ./src

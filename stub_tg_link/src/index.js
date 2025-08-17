@@ -1,5 +1,4 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 
 const app = express();
@@ -10,6 +9,11 @@ if (!process.env.BOT_USERNAME) {
   console.warn('Warning: BOT_USERNAME is not set in the environment. Using default_bot_username.');
 }
 const PORT = process.env.PORT || 3000;
+
+const SECRET_TG_PAYLOAD_KEY = process.env.SECRET_TG_PAYLOAD_KEY || 'default_secret_key';
+if (!process.env.SECRET_TG_PAYLOAD_KEY) {
+  console.warn('Warning: SECRET_TG_PAYLOAD_KEY is not set in the environment. Using default_secret_key.');
+}
 
 function randUserId() {
   return Math.floor(1000000 + Math.random() * 1000000);
@@ -58,17 +62,22 @@ app.post('/api/generate', (req, res) => {
 
   const user_id = randUserId();
   const ts = Math.floor(Date.now() / 1000);
-  const guid = uuidv4();
+  const guid = crypto.randomUUID();
   const nonce = sha256Hex(guid + ts + user_id);
 
   const payloadObj = {
     site_id: 'example.bet',
     user_id: String(user_id),
     ts: ts,
-    nonce: nonce
+    nonce: nonce,
   };
 
-  const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64');
+  // make sign - sort payload keys
+  const sortedKeys = Object.keys(payloadObj).sort();
+  const signString = sortedKeys.map(key => `${key}=${payloadObj[key]}`).join('&');
+  const sign = sha256Hex(signString + SECRET_TG_PAYLOAD_KEY);
+
+  const payload = Buffer.from(JSON.stringify({ ...payloadObj, sign })).toString('base64');
   const link = `https://t.me/${encodeURIComponent(BOT_USERNAME)}?startapp=${encodeURIComponent(payload)}`;
 
   res.json({ payload, link, data: payloadObj });
