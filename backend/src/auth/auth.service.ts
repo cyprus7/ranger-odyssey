@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
-import crypto from 'crypto'
+import * as crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { db } from '../db/drizzle-client'
 import { accountLinks } from '../db/schema'
