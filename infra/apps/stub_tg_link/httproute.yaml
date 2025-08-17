@@ -27,5 +27,3 @@ spec:
       backendRefs:
         - name: stub-tg-link
           port: 80
-          namespace: stub
-          port: 80
