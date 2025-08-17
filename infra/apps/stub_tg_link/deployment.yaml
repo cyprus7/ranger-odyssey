@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: stub-tg-link
+  namespace: stub
   labels:
     app: stub-tg-link
 spec:
