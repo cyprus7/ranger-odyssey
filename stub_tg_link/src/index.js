@@ -28,29 +28,145 @@ app.get('/tg-link-generate', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(`<!doctype html>
 <html>
-<head><meta charset="utf-8"><title>tg link generate</title></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>tg link generate</title>
+  <style>
+    /* Mobile-first responsive styles */
+    :root {
+      --bg: #f7f9fb;
+      --card: #ffffff;
+      --accent: #0066d6;
+      --text: #0b2540;
+      --muted: #556680;
+      --radius: 12px;
+    }
+    html,body {
+      height: 100%;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: transparent;
+      text-align: center;
+    }
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      color: var(--muted);
+    }
+    .visually-hidden {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      max-width: 360px;
+      padding: 14px 18px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(180deg,var(--accent), #0056b3);
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,102,214,0.14);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: translateY(1px); }
+    .out {
+      display: none; /* hidden initially — только кнопка на начальном экране */
+      margin: 18px auto 0;
+      text-align: left;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+      font-size: 13px;
+      background: var(--card);
+      padding: 12px;
+      border-radius: var(--radius);
+      box-shadow: 0 6px 18px rgba(12,24,48,0.06);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .out.visible { display: block; }
+    .out .row { margin-bottom: 10px; }
+    .link a { color: var(--accent); word-break: break-all; text-decoration: none; }
+    @media (min-width: 640px) {
+      .card { text-align: left; }
+      h3 { font-size: 18px; color: var(--muted); }
+      .btn { width: auto; min-width: 260px; }
+    }
+  </style>
+</head>
 <body>
-  <h3>stub_tg_link</h3>
-  <button id="gen">link example</button>
-  <div id="out" style="margin-top:1em; font-family:monospace;"></div>
+  <div class="wrap">
+    <div class="card">
+      <h3 class="visually-hidden">stub_tg_link</h3>
+      <button id="gen" class="btn">link example</button>
+      <div id="out" class="out" aria-hidden="true"></div>
+    </div>
+  </div>
+
   <script>
     document.getElementById('gen').addEventListener('click', async () => {
-      const resp = await fetch('/tg-link-generate/generate', { method: 'POST' });
-      const body = await resp.json();
-      const out = document.getElementById('out');
-      if (resp.ok) {
+      const btn = document.getElementById('gen');
+      btn.disabled = true;
+      btn.textContent = 'generating...';
+      try {
+        const resp = await fetch('/tg-link-generate/generate', { method: 'POST' });
+        const body = await resp.json();
+        const out = document.getElementById('out');
         out.innerHTML = '';
-        const rawDiv = document.createElement('div');
-        rawDiv.textContent = 'payload (raw): ' + body.rawPayload;
-        const base64Div = document.createElement('div');
-        base64Div.textContent = 'payload (base64): ' + body.payload;
-        const linkDiv = document.createElement('div');
-        linkDiv.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener">Open tg link</a>';
-        out.appendChild(rawDiv);
-        out.appendChild(base64Div);
-        out.appendChild(linkDiv);
-      } else {
-        out.textContent = 'error: ' + (body.error || 'unknown');
+        if (resp.ok) {
+          // показать область вывода
+          out.classList.add('visible');
+          out.setAttribute('aria-hidden', 'false');
+
+          const rawDiv = document.createElement('div');
+          rawDiv.className = 'row';
+          rawDiv.textContent = 'payload (raw): ' + body.rawPayload;
+
+          const base64Div = document.createElement('div');
+          base64Div.className = 'row';
+          base64Div.textContent = 'payload (base64): ' + body.payload;
+
+          const linkDiv = document.createElement('div');
+          linkDiv.className = 'row link';
+          linkDiv.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener">Open tg link</a>';
+
+          out.appendChild(rawDiv);
+          out.appendChild(base64Div);
+          out.appendChild(linkDiv);
+        } else {
+          out.classList.add('visible');
+          out.setAttribute('aria-hidden', 'false');
+          out.textContent = 'error: ' + (body.error || 'unknown');
+        }
+      } catch (e) {
+        const out = document.getElementById('out');
+        out.classList.add('visible');
+        out.setAttribute('aria-hidden', 'false');
+        out.textContent = 'network error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'link example';
       }
     });
   </script>
