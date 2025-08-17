@@ -40,12 +40,15 @@ app.get('/tg-link-generate', (req, res) => {
       const out = document.getElementById('out');
       if (resp.ok) {
         out.innerHTML = '';
-        const p = document.createElement('div');
-        p.textContent = 'payload (base64): ' + body.payload;
-        const a = document.createElement('div');
-        a.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener">Open tg link</a>';
-        out.appendChild(p);
-        out.appendChild(a);
+        const rawDiv = document.createElement('div');
+        rawDiv.textContent = 'payload (raw): ' + body.rawPayload;
+        const base64Div = document.createElement('div');
+        base64Div.textContent = 'payload (base64): ' + body.payload;
+        const linkDiv = document.createElement('div');
+        linkDiv.innerHTML = '<a href="' + body.link + '" target="_blank" rel="noopener">Open tg link</a>';
+        out.appendChild(rawDiv);
+        out.appendChild(base64Div);
+        out.appendChild(linkDiv);
       } else {
         out.textContent = 'error: ' + (body.error || 'unknown');
       }
@@ -77,10 +80,11 @@ app.post('/tg-link-generate/generate', (req, res) => {
   const signString = sortedKeys.map(key => `${key}=${payloadObj[key]}`).join('&');
   const sign = sha256Hex(signString + SECRET_TG_PAYLOAD_KEY);
 
-  const payload = Buffer.from(JSON.stringify({ ...payloadObj, sign })).toString('base64');
+  const rawPayload = JSON.stringify({ ...payloadObj, sign });
+  const payload = Buffer.from(rawPayload).toString('base64');
   const link = `https://t.me/${encodeURIComponent(BOT_USERNAME)}?startapp=${encodeURIComponent(payload)}`;
 
-  res.json({ payload, link, data: payloadObj });
+  res.json({ rawPayload, payload, link, data: payloadObj });
 });
 
 app.listen(PORT, () => {
