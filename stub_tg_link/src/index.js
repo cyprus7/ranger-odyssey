@@ -5,7 +5,10 @@ const crypto = require('crypto');
 const app = express();
 app.use(express.json());
 
-const BOT_USERNAME = process.env.BOT_USERNAME || '';
+const BOT_USERNAME = process.env.BOT_USERNAME || 'default_bot_username';
+if (!process.env.BOT_USERNAME) {
+  console.warn('Warning: BOT_USERNAME is not set in the environment. Using default_bot_username.');
+}
 const PORT = process.env.PORT || 3000;
 
 function randUserId() {
@@ -72,5 +75,5 @@ app.post('/api/generate', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`stub_tg_link running on port \${PORT}, route: /tg-link-generate\`);
+  console.log('stub_tg_link running on port ' + PORT + ', route: /tg-link-generate');
 });
