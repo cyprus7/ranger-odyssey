@@ -23,7 +23,7 @@ export async function ensureTelegramAuth(apiBase: string) {
         }
     }
 
-    const res = await fetch(`${apiBase}/auth/telegram`, {
+    const res = await fetch(`${apiBase}/api/auth/telegram`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
