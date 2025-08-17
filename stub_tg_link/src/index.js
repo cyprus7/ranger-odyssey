@@ -35,7 +35,7 @@ app.get('/tg-link-generate', (req, res) => {
   <div id="out" style="margin-top:1em; font-family:monospace;"></div>
   <script>
     document.getElementById('gen').addEventListener('click', async () => {
-      const resp = await fetch('/api/generate', { method: 'POST' });
+      const resp = await fetch('/tg-link-generate/generate', { method: 'POST' });
       const body = await resp.json();
       const out = document.getElementById('out');
       if (resp.ok) {
@@ -55,7 +55,7 @@ app.get('/tg-link-generate', (req, res) => {
 </html>`);
 });
 
-app.post('/api/generate', (req, res) => {
+app.post('/tg-link-generate/generate', (req, res) => {
   if (!BOT_USERNAME) {
     return res.status(500).json({ error: 'BOT_USERNAME not set in environment' });
   }

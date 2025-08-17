@@ -20,10 +20,3 @@ spec:
       backendRefs:
         - name: stub-tg-link
           port: 80
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /api/generate
-      backendRefs:
-        - name: stub-tg-link
-          port: 80
