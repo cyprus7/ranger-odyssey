@@ -31,13 +31,13 @@ jobs:
         run: |
           ENV_DIR=$([ "${{ github.ref_name }}" = "main" ] && echo infra/envs/prod || echo infra/envs/sandbox)
           pip install yq >/dev/null 2>&1 || true
-          # update main app image tag in env values (existing behavior)
+          # обновим основной values (как и было)
           yq -iy '.image.tag = "'${{ github.sha }}'"' "$ENV_DIR/values.yaml"
-          # update stub deployment image to new sha (so ArgoCD kustomize sees new image)
+
+          # обновим образ для stub_tg_link (чтобы Argo увидел новое)
           NEW_IMAGE="ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }}"
-          # Replace the image line in deployment.yaml (works for common formatting "image: <value>")
-          if grep -q "infra/apps/stub_tg_link/deployment.yaml"; then
-            sed -i -E "s|image: .*stub_tg_link:.*|image: ${NEW_IMAGE}|g" infra/apps/stub_tg_link/deployment.yaml || true
+          if [ -f infra/apps/stub_tg_link/deployment.yaml ]; then
+            sed -i -E "s|image:\s*ghcr\.io/.*/stub_tg_link:.*|image: ${NEW_IMAGE}|g" infra/apps/stub_tg_link/deployment.yaml
           fi
 
       - name: Commit & push
