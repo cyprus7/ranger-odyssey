@@ -1,28 +1,28 @@
-apiVersion: gateway.networking.k8s.io/v1beta1
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: stub-tg-link-route
-  namespace: sandbox
+  namespace: stub
 spec:
-  parentRefs:
-    - name: eg           # change to your Gateway resource name
-      namespace: envoy-gateway
   hostnames:
-    - {{ .Values.host | quote }}
+    - "quests.tmbot.cc"
+  parentRefs:
+    - name: web
+      namespace: prod
+      sectionName: https
   rules:
     - matches:
         - path:
             type: PathPrefix
             value: /tg-link-generate
       backendRefs:
-        - backendRef:
-            name: stub-tg-link
-            port: 80
+        - name: stub-tg-link
+          port: 80
     - matches:
         - path:
             type: PathPrefix
             value: /api/generate
       backendRefs:
-        - backendRef:
-            name: stub-tg-link
+        - name: stub-tg-link
+          port: 80
             port: 80

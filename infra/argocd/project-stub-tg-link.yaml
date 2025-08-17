@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: stub-tg-link
+  namespace: argocd
+spec:
+  description: Project for stub-tg-link app
+  sourceRepos:
+    - 'https://github.com/cyprus7/ranger-odyssey.git'
+  destinations:
+    - namespace: stub
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
