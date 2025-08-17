@@ -18,18 +18,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push
+      - name: Build & push images
         run: |
           docker build -t ghcr.io/${{ github.repository }}/backend:${{ github.sha }} ./backend
           docker build -t ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} ./frontend
+          docker build -t ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }} ./stub_tg_link
           docker push ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
           docker push ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }}
 
-      - name: Bump image tag in Helm values (env)
+      - name: Bump image tag in Helm values (env) and update stub deployment image
         run: |
           ENV_DIR=$([ "${{ github.ref_name }}" = "main" ] && echo infra/envs/prod || echo infra/envs/sandbox)
           pip install yq >/dev/null 2>&1 || true
-          yq -iy '.image.tag = "${{ github.sha }}"' "$ENV_DIR/values.yaml"
+          # update main app image tag in env values (existing behavior)
+          yq -iy '.image.tag = "'${{ github.sha }}'"' "$ENV_DIR/values.yaml"
+          # update stub deployment image to new sha (so ArgoCD kustomize sees new image)
+          yq -iy '.spec.template.spec.containers[0].image = "ghcr.io/'"${${{ github.repository }}}"'/stub_tg_link:'${{ github.sha }}'"' infra/apps/stub_tg_link/deployment.yaml || \
+            yq -iy '.spec.template.spec.containers[0].image = "ghcr.io/'"${{ github.repository }}"'/stub_tg_link:'${{ github.sha }}'"' infra/apps/stub_tg_link/deployment.yaml
 
       - name: Commit & push
         run: |

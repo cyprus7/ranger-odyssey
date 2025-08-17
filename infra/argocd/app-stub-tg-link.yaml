@@ -11,7 +11,7 @@ spec:
     path: infra/apps/stub_tg_link
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: sandbox
+    namespace: stub
   syncPolicy:
     automated:
       prune: true

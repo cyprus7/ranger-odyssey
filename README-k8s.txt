@@ -28,4 +28,50 @@
    Frontend calls API at the same origin: https://quests.tmbot.cc/api
 
 7) Deploy stub_tg_link mini-app (ArgoCD)
-   kubectl apply -f infra/argocd/app-stub-tg-link.yaml
+   # ArgoCD Application will create namespace `stub` (syncOptions CreateNamespace=true)
+   kubectl apply -f infra/argocd/app-stub-tg-link.yaml -n argocd
+
+Quick note:
+- Все "заглушки" теперь живут в namespace `stub`.
+
+Quick ArgoCD checklist if pod не появился
+1) Убедиться, что Application создан:
+   kubectl get applications -n argocd | grep stub-tg-link
+
+2) Посмотреть статус Application и ошибки синхронизации:
+   kubectl describe application stub-tg-link -n argocd
+   # либо через argocd CLI / UI:
+   # argocd app get stub-tg-link
+
+3) Форсировать синхронизацию (если не включена автосинхронизация):
+   # с argocd CLI:
+   # argocd app sync stub-tg-link
+   # или через kubectl (скинь аннотацию/патч если нужно):
+   kubectl -n argocd patch application stub-tg-link --type merge -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}' || true
+   # и затем:
+   kubectl -n argocd rollout restart deployment argocd-application-controller || true
+
+4) Если Application показывает ошибки получения манифестов:
+   - проверить repoURL в infra/argocd/app-stub-tg-link.yaml (приватный репозиторий требует добавить credentials в ArgoCD)
+   - проверить path: infra/apps/stub_tg_link действительно существует в репо
+
+5) Проверить ресурсы в sandbox namespace:
+   kubectl get all -n sandbox
+   kubectl get httproutes -n sandbox
+   kubectl describe deploy stub-tg-link -n sandbox
+   kubectl describe svc stub-tg-link -n sandbox
+   kubectl get events -n sandbox --sort-by='.lastTimestamp'
+
+6) Если Deployment создан, но нет Pod:
+   - проверить образ в deployment.yaml (image: your-registry/stub_tg_link:latest) — заменить на существующий образ или путь сборки
+   - проверить imagePullSecrets / доступ к registry
+   - посмотреть describe пода/replicaset для ошибок создания
+
+7) Логи контроллера ArgoCD для подробностей:
+   kubectl logs -n argocd deploy/argocd-application-controller --tail=200
+
+Если после этих шагов всё ещё нет pod — пришлите вывод:
+- kubectl get applications -n argocd
+- kubectl describe application stub-tg-link -n argocd
+- kubectl get all -n sandbox
+- kubectl describe deploy stub-tg-link -n sandbox

@@ -6,4 +6,4 @@ resources:
   - httproute.yaml
 
 # default namespace where resources will be created; change to "prod" if needed
-namespace: sandbox
+namespace: stub
