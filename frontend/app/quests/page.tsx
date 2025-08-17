@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import FooterNav from '../components/FooterNav'
 import logger from '../utils/logger'
+import { ensureTelegramAuth, fetchJson } from '../utils/auth'
 
 type Quest = { id: string; title: string; subtitle?: string; progress?: number };
 type QuestState = {
@@ -25,67 +26,57 @@ export default function QuestsPage() {
     const api = process.env.NEXT_PUBLIC_API_URL || ''
 
     useEffect(() => {
-        logger.info('Fetching quest list...')
-        fetch(`${api}/api/quests`)
-            .then(r => r.json())
-            .then(data => {
-                logger.info({ quests: data }, 'Quest list fetched')
-                setQuests(data)
-            })
-            .catch(e => {
-                logger.error({ error: e }, 'Failed to fetch quest list')
-                setError(String(e))
-            })
-
-        logger.info('Fetching current quest state...')
-        fetch(`${api}/api/quests/state`)
-            .then(r => r.json())
-            .then(data => {
-                logger.info({ questState: data }, 'Quest state fetched')
-                setQuestState(data)
-            })
-            .catch(e => {
-                logger.error({ error: e }, 'Failed to fetch quest state')
-                setError(String(e))
-            })
-            .finally(() => setLoading(false))
+        (async () => {
+            try {
+                logger.info('Auth & initial fetch...')
+                await ensureTelegramAuth(api)
+                const [q, s] = await Promise.all([
+                    fetchJson<Quest[]>(`${api}/api/quests`, undefined, api),
+                    fetchJson<QuestState>(`${api}/api/quests/state`, undefined, api),
+                ])
+                setQuests(q)
+                setQuestState(s)
+            } catch (e) {
+                logger.error({ e }, 'Init failed')
+                setError(e instanceof Error ? e.message : String(e))
+            } finally {
+                setLoading(false)
+            }
+        })()
     }, [api])
 
-    const handleChoice = (choiceId: string) => {
+    const handleChoice = async (choiceId: string) => {
         logger.info({ choiceId }, 'Submitting quest choice...')
         setLoading(true)
-        fetch(`${api}/api/quests/choice`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ choiceId })
-        })
-            .then(r => r.json())
-            .then(data => {
-                logger.info({ result: data }, 'Quest choice submitted')
-                setQuestState(prev => prev ? {
-                    ...prev,
-                    currentScene: data.newScene,
-                    choices: [] // Clear choices after selection
-                } : null)
-                setTimeout(() => {
+        try {
+            const data = await fetchJson<{ newScene: QuestState['currentScene'] }>(
+                `${api}/api/quests/choice`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ choiceId }),
+                },
+                api
+            )
+            logger.info({ result: data }, 'Quest choice submitted')
+            setQuestState(prev => prev ? { ...prev, currentScene: data.newScene, choices: [] } : null)
+
+            setTimeout(async () => {
+                try {
                     logger.info('Refreshing quest state...')
-                    fetch(`${api}/api/quests/state`)
-                        .then(r => r.json())
-                        .then(data => {
-                            logger.info({ questState: data }, 'Quest state refreshed')
-                            setQuestState(data)
-                        })
-                        .catch(e => {
-                            logger.error({ error: e }, 'Failed to refresh quest state')
-                            setError(String(e))
-                        })
-                }, 20000)
-            })
-            .catch(e => {
-                logger.error({ error: e }, 'Failed to submit quest choice')
-                setError(String(e))
-            })
-            .finally(() => setLoading(false))
+                    const s = await fetchJson<QuestState>(`${api}/api/quests/state`, undefined, api)
+                    setQuestState(s)
+                } catch (e) {
+                    logger.error({ e }, 'Failed to refresh quest state')
+                    setError(e instanceof Error ? e.message : String(e))
+                }
+            }, 20000)
+        } catch (e) {
+            logger.error({ e }, 'Failed to submit quest choice')
+            setError(e instanceof Error ? e.message : String(e))
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (

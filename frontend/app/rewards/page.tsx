@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import FooterNav from '../components/FooterNav'
+import { ensureTelegramAuth, fetchJson } from '../utils/auth'
 
 type Reward = {
   day: number;
@@ -15,11 +16,15 @@ export default function RewardsPage() {
     const api = process.env.NEXT_PUBLIC_API_URL || ''
 
     useEffect(() => {
-        const url = `${api}/api/rewards`
-        fetch(url)
-            .then(r => r.json())
-            .then(setRewards)
-            .catch(e => setError(String(e)))
+        (async () => {
+            try {
+                await ensureTelegramAuth(api)
+                const data = await fetchJson<Reward[]>(`${api}/api/rewards`, undefined, api)
+                setRewards(data)
+            } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : String(e))
+            }
+        })()
     }, [api])
 
     return (

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import FooterNav from './components/FooterNav'
 import { useRouter } from 'next/navigation'
+import { ensureTelegramAuth, fetchJson } from './utils/auth'
 
 type Quest = { id: string; title: string; subtitle?: string; progress?: number }
 
@@ -12,10 +13,15 @@ export default function HomePage() {
     const router = useRouter()
 
     useEffect(() => {
-        fetch(`${api}/api/quests`)
-            .then(r => r.json())
-            .then(setQuests)
-            .catch(e => setError(String(e)))
+        (async () => {
+            try {
+                await ensureTelegramAuth(api) // cookie c JWT на 15 мин
+                const data = await fetchJson<Quest[]>(`${api}/api/quests`, undefined, api)
+                setQuests(data)
+            } catch (e: unknown) {
+                setError(String((e as Error)?.message || e))
+            }
+        })()
     }, [api])
 
     const handleQuestClick = (id: string) => {
