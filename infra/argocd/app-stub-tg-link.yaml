@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/your-org/your-repo' # <-- replace with your repository URL
+    repoURL: 'https://github.com/cyprus7/ranger-odyssey.git'
     targetRevision: HEAD
     path: infra/apps/stub_tg_link
   destination:
