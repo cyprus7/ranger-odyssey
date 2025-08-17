@@ -1,0 +1,9 @@
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+
+# default namespace where resources will be created; change to "prod" if needed
+namespace: sandbox

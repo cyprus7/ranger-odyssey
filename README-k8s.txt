@@ -26,3 +26,6 @@
 6) BotFather
    Web App URL: https://quests.tmbot.cc/
    Frontend calls API at the same origin: https://quests.tmbot.cc/api
+
+7) Deploy stub_tg_link mini-app (ArgoCD)
+   kubectl apply -f infra/argocd/app-stub-tg-link.yaml

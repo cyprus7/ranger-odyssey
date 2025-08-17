@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-    title: process.env.NEXT_PUBLIC_APP_TITLE || 'GeoQuests',
+    title: process.env.NEXT_PUBLIC_APP_TITLE || 'Quests',
     viewport: 'width=device-width, initial-scale=1'
 }
 

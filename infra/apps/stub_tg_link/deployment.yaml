@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stub-tg-link
+  labels:
+    app: stub-tg-link
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stub-tg-link
+  template:
+    metadata:
+      labels:
+        app: stub-tg-link
+    spec:
+      containers:
+        - name: stub-tg-link
+          # Replace image with your registry/repo/tag built from the repository
+          image: your-registry/stub_tg_link:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: BOT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: stub-tg-link-config
+                  key: BOT_USERNAME
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: stub-tg-link-config
+                  key: PORT
+          livenessProbe:
+            httpGet:
+              path: /tg-link-generate
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /tg-link-generate
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10

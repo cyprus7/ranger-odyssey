@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stub-tg-link-config
+data:
+  BOT_USERNAME: "ranger_odyssey_bot" # replace with real bot username or override in overlays
+  PORT: "3000"

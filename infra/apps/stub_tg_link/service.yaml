@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: stub-tg-link
+  labels:
+    app: stub-tg-link
+spec:
+  selector:
+    app: stub-tg-link
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
