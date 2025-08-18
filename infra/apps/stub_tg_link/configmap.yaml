@@ -6,3 +6,4 @@ metadata:
 data:
   BOT_USERNAME: "ranger_odyssey_bot"
   PORT: "3000"
+  SECRET_TG_PAYLOAD_KEY: "default_secret_key"
