@@ -31,8 +31,7 @@ export class AuthService {
         if (!this.botToken) {
             throw new Error('BOT_TOKEN is not set in the environment')
         }
-        // Telegram spec: secret_key = SHA256(botToken)
-        return crypto.createHash('sha256').update(this.botToken).digest()
+        return crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest()
     }
 
     private hmacHex(input: string, key: Buffer) {
