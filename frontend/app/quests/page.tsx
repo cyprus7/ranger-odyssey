@@ -18,11 +18,24 @@ type QuestState = {
   }[];
 };
 
+// добавлен тип профиля и состояние inventory
+type InventoryItem = { id: string; qty: number }
+type Profile = {
+  tags?: Record<string, number>
+  main_type?: string
+  main_psychotype?: string
+  confidence?: number
+  inventory?: InventoryItem[]
+  stats?: Record<string, number>
+}
+
 export default function QuestsPage() {
     const [quests, setQuests] = useState<Quest[] | null>(null)
     const [questState, setQuestState] = useState<QuestState | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    // новое состояние для инвентаря
+    const [inventory, setInventory] = useState<InventoryItem[]>([])
     const api = process.env.NEXT_PUBLIC_API_URL || ''
 
     useEffect(() => {
@@ -30,12 +43,15 @@ export default function QuestsPage() {
             try {
                 logger.info('Auth & initial fetch...')
                 await ensureTelegramAuth(api)
-                const [q, s] = await Promise.all([
+                const [q, s, profile] = await Promise.all([
                     fetchJson<Quest[]>(`${api}/api/quests`, undefined, api),
                     fetchJson<QuestState>(`${api}/api/quests/state`, undefined, api),
+                    fetchJson<Profile>(`${api}/api/profile`, undefined, api),
                 ])
                 setQuests(q)
                 setQuestState(s)
+                // сохраняем инвентарь (если есть)
+                setInventory(profile?.inventory ?? [])
             } catch (e) {
                 logger.error({ e }, 'Init failed')
                 setError(e instanceof Error ? e.message : String(e))
@@ -84,6 +100,20 @@ export default function QuestsPage() {
             <main className="main">
                 {loading && <div className="loading">Loading quest data...</div>}
                 {error && <p style={{color: 'crimson'}}>Error: {error}</p>}
+
+                {/* показываем инвентарь — простой список id и qty */}
+                {inventory.length > 0 && !loading && (
+                    <div style={{ marginBottom: 18, background: '#fff', padding: 12, borderRadius: 8 }}>
+                        <h3 style={{ margin: '0 0 8px 0' }}>Inventory</h3>
+                        <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {inventory.map(item => (
+                                <li key={item.id} style={{ marginBottom: 6 }}>
+                                    <strong>{item.id}</strong>: {item.qty}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
         
                 {questState && !loading && (
                     <div className="quest-scene" style={{marginBottom: 24}}>

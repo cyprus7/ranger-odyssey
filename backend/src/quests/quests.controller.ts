@@ -4,6 +4,9 @@ import { PinoLogger } from 'nestjs-pino'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CurrentUserId } from '../auth/current-user.decorator'
 import { RewardService } from './reward.service'
+import { db } from '../db/drizzle-client'
+import { profiles } from '../db/schema'
+import { eq } from 'drizzle-orm'
 
 @Controller('quests')
 export class QuestsController {
@@ -67,4 +70,64 @@ export class RewardsController {
       await this.rewards.setStatus(userId, dayNumber, 'claimed')
       return { ok: true, day: dayNumber, status: 'claimed' }
   }
+}
+
+// New controller: profile
+@Controller('profile')
+export class ProfileController {
+    constructor(private readonly logger: PinoLogger) {
+        this.logger.setContext('ProfileController')
+    }
+
+    @Get()
+    @UseGuards(JwtAuthGuard)
+    async getProfile(@CurrentUserId() userId: string) {
+        this.logger.info({ userId }, 'Fetching profile')
+        const rows = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+        const row = rows[0] ?? null
+
+        if (!row) {
+            // insert defaults (empty inventory and tags)
+            await db.insert(profiles).values({
+                userId,
+                mainType: null,
+                mainPsychotype: null,
+                confidence: '0',
+                inventory: JSON.stringify([]),
+                tags: JSON.stringify({}),
+                stats: JSON.stringify({}),
+            }).onConflictDoNothing()
+            // return default shape
+            const defaultProfile = {
+                tags: {},
+                main_type: null,
+                main_psychotype: null,
+                confidence: 0,
+                inventory: [],
+                stats: {},
+            }
+            this.logger.info({ userId }, 'Profile initialized (defaults)')
+            return defaultProfile
+        }
+
+        // normalize types: parse JSON fields (inventory, tags, stats) if needed
+        let inventory: unknown = []
+        let tags: unknown = {}
+        let stats: unknown = {}
+        // eslint-disable-next-line no-empty
+        try { inventory = typeof row.inventory === 'string' ? JSON.parse(row.inventory) : row.inventory ?? [] } catch {}
+        // eslint-disable-next-line no-empty
+        try { tags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags ?? {} } catch {}
+        // eslint-disable-next-line no-empty
+        try { stats = typeof row.stats === 'string' ? JSON.parse(row.stats) : row.stats ?? {} } catch {}
+
+        return {
+            tags,
+            main_type: row.mainType ?? null,
+            main_psychotype: row.mainPsychotype ?? null,
+            confidence: Number(row.confidence ?? 0),
+            inventory,
+            stats,
+        }
+    }
 }

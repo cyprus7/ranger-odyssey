@@ -71,3 +71,20 @@ export const questRewards = pgTable(
         uxRewardUserDay: uniqueIndex('ux_rewards_user_day').on(t.userId, t.dayNumber),
     }),
 )
+
+// New table: profiles
+export const profiles = pgTable(
+    'profiles',
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        userId: text('user_id').notNull().unique(),
+        mainType: text('main_type'),
+        mainPsychotype: text('main_psychotype'),
+        confidence: text('confidence'), // хранить число как текст/decimal -- можно менять на real/float при необходимости
+        inventory: jsonb('inventory'), // JSONB: список {id, qty}
+        tags: jsonb('tags'), // JSONB: объект тегов
+        stats: jsonb('stats'), // JSONB: доп. статистика, напр. { xp: 20 }
+        createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    },
+)

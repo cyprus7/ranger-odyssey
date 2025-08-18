@@ -35,6 +35,22 @@ export class QuestsService {
 
     // userId обязателен (из JWT)
     async getQuestState(userId: string, day: string = 'day1') {
+        // наверно надо получать сцены
+        // выбор меняет параметры и переключает сцену - сцену сохраням
+        // целиком квест не отдаем клиенту. только сцену тут
+        // другие методы для работы с квестами - обновление квеста (дня) целиком
+        // для игрока мы кешируем в редисе день и его состояние на минут 30 возможно при обновлении куки обновим ключик - состояние игрок:квест только одно
+        // можно и дни кешировать. может быть отдельный сервис для квестов далее
+
+        // отдавать клиенту выборы без данных об эффктах  {
+        //   "id": "scene_2_choice",
+        //   "text": "Башня гудит. Лис кивает на кристалл...",
+        //   "choices": [
+        //     {"id":"risk_spin","label":"Кручу. Жизнь — игра","effects":[{"type":"grant_fs","value":15},{"type":"tag","key":"risk_pos","op":"inc","value":1}]},
+        //     {"id":"learn_rtp","label":"Где RTP и вейджер?","next":"scene_2_archive","effects":[{"type":"tag","key":"analyst","op":"inc","value":1}]},
+        //     {"id":"skip","label":"Пока пас","effects":[{"type":"tag","key":"risk_avoid","op":"inc","value":1}]}
+        //   ]
+        // }
         const dayNumber = parseDayNumber(day)
         await this.progressStore.startIfNeeded(userId, dayNumber)
 
