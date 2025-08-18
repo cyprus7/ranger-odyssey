@@ -29,7 +29,7 @@ export class AuthService {
 
     private calcSecretKey() {
         if (!this.botToken) {
-            throw new Error('BOT_TOKEN is not set in the environment');
+            throw new Error('BOT_TOKEN is not set in the environment')
         }
         return crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest()
     }
