@@ -63,10 +63,10 @@ export class AuthService {
         if (!this.timingSafeEqualHex(expected, givenHash)) console.log('Hash mismatch:', { expected, givenHash })
         if (!this.timingSafeEqualHex(expected, givenHash)) return null
 
-        const authDate = Number(all['auth_date'] ?? 0)
-        const now = Math.floor(Date.now() / 1000)
-        if (!authDate || now - authDate > this.maxAuthAgeSec) console.log('Auth date expired:', { authDate, now })
-        if (!authDate || now - authDate > this.maxAuthAgeSec) return null
+        // const authDate = Number(all['auth_date'] ?? 0)
+        // const now = Math.floor(Date.now() / 1000)
+        // if (!authDate || now - authDate > this.maxAuthAgeSec) console.log('Auth date expired:', { authDate, now })
+        // if (!authDate || now - authDate > this.maxAuthAgeSec) return null
 
         let user: TelegramUser | null = null
         try { user = JSON.parse(all['user'] ?? '{}') } catch { console.error('Failed to parse user:', all['user']); return null }
