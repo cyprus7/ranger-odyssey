@@ -11,7 +11,7 @@ type TelegramUser = { id: number; username?: string; first_name?: string; last_n
 export class AuthService {
     private readonly botToken = process.env.BOT_TOKEN!
     private readonly jwtSecret = process.env.JWT_SECRET!
-    private readonly jwtTtlSec = Number(process.env.JWT_TTL_SEC ?? 900)
+    private readonly jwtTtlSec = Number(process.env.JWT_TTL_SEC ?? 15)
     private readonly maxAuthAgeSec = Number(process.env.TG_AUTH_MAX_AGE_SEC ?? 300)
 
     private parseInitData(qs: string) {
@@ -31,7 +31,8 @@ export class AuthService {
         if (!this.botToken) {
             throw new Error('BOT_TOKEN is not set in the environment')
         }
-        return crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest()
+        // Telegram spec: secret_key = SHA256(botToken)
+        return crypto.createHash('sha256').update(this.botToken).digest()
     }
 
     private hmacHex(input: string, key: Buffer) {
