@@ -120,25 +120,6 @@ export default function QuestsPage() {
                         )}
                     </div>
                 )}
-        
-                {quests && !loading && (
-                    <div style={{display: 'grid', gap: 12}}>
-                        <h3>Your Quests</h3>
-                        {quests.map(q => (
-                            <article key={q.id} style={{border: '1px solid #e5e7eb', borderRadius: 12, padding: 12}}>
-                                <h3 style={{margin: '4px 0'}}>{q.title}</h3>
-                                {q.subtitle && <p style={{margin: 0, color: '#707579'}}>{q.subtitle}</p>}
-                                {typeof q.progress === 'number' && (
-                                    <div style={{marginTop: 8}}>
-                                        <div style={{height: 8, background: '#f4f4f5', borderRadius: 999}}>
-                                            <div style={{width: `${q.progress}%`, height: 8, borderRadius: 999, background: '#3390ec'}}/>
-                                        </div>
-                                    </div>
-                                )}
-                            </article>
-                        ))}
-                    </div>
-                )}
             </main>
             <FooterNav />
         </>

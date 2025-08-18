@@ -73,6 +73,7 @@ export class AuthService {
         if (!user?.id) console.error('User ID is missing:', user)
         if (!user?.id) return null
 
+        console.log({user})
         return { user, all }
     }
 
