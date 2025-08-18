@@ -6,5 +6,6 @@ declare module 'express-serve-static-core' {
         id: string
         log: pino.Logger     // из pino-http
         logger: pino.Logger  // наш алиас
+        user?: { id: string } // из JWT guard
     }
 }
