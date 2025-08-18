@@ -23,13 +23,13 @@ export class AuthController {
         @Body() body: TelegramAuthRequest,
         @Res({ passthrough: true }) res: Response,
     ) {
-        const { initData, startParamRaw, startPayload } = body
+        const { initData, startParamRaw } = body
         if (!initData) throw new BadRequestException('initData required')
 
         try {
             const { jwt, maxAgeMs } = await this.auth.handleTelegramAuth(
                 initData,
-                { startParamRaw, startPayload },
+                { startParamRaw },
             )
             res.cookie(
                 process.env.COOKIE_NAME ?? 'app_access',

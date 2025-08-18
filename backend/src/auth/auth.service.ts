@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import * as jwt from 'jsonwebtoken'
 import { db } from '../db/drizzle-client'
 import { accountLinks } from '../db/schema'
@@ -7,89 +7,108 @@ import { and, eq } from 'drizzle-orm'
 
 type TelegramUser = { id: number; username?: string; first_name?: string; last_name?: string }
 
+function base64UrlToBuffer(b64url: string) {
+    const s = b64url.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = s.length % 4 ? 4 - (s.length % 4) : 0
+    return Buffer.from(s + '='.repeat(pad), 'base64')
+}
+
 @Injectable()
 export class AuthService {
+    // поддержим оба названия переменной окружения
     private readonly botToken = process.env.BOT_TOKEN!
-    private readonly jwtSecret = process.env.JWT_SECRET!
+    private readonly jwtSecret = process.env.JWT_SECRET ?? 'change-me'
     private readonly jwtTtlSec = Number(process.env.JWT_TTL_SEC ?? 15)
     private readonly maxAuthAgeSec = Number(process.env.TG_AUTH_MAX_AGE_SEC ?? 300)
 
     private parseInitData(qs: string) {
-        const params = new URLSearchParams(qs)
-        const obj: Record<string, string> = {}
-        for (const [k, v] of params) obj[k] = v
-        return obj
+        const p = new URLSearchParams(qs)
+        const out: Record<string, string> = {}
+        p.forEach((v, k) => { out[k] = v })
+        return out
     }
 
     private buildDataCheckString(all: Record<string, string>) {
-        const { hash, ...rest } = all
-        const entries = Object.keys(rest).sort().map(k => `${k}=${rest[k]}`)
-        return { dataCheckString: entries.join('\n'), hash }
+        return Object.keys(all)
+            .filter(k => k !== 'hash')
+            .sort()
+            .map(k => `${k}=${all[k]}`)
+            .join('\n')
     }
 
     private calcSecretKey() {
-        if (!this.botToken) {
-            throw new Error('BOT_TOKEN is not set in the environment')
-        }
+        if (!this.botToken) throw new Error('BOT_TOKEN is not set')
+        // secret_key = HMAC_SHA256("WebAppData", bot_token)
         return crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest()
     }
 
-    private hmacHex(input: string, key: Buffer) {
-        return crypto.createHmac('sha256', key).update(input).digest('hex')
+    private timingSafeEqualHex(aHex: string, bHex: string) {
+        const a = Buffer.from(aHex, 'hex')
+        const b = Buffer.from(bHex, 'hex')
+        if (a.length !== b.length) return false
+        return crypto.timingSafeEqual(a, b)
     }
 
     validateInitData(initData: string) {
+        if (!initData) return null
         const all = this.parseInitData(initData)
-        const { dataCheckString, hash } = this.buildDataCheckString(all)
+
+        const givenHash = all['hash']
+        if (!givenHash) return null
+
+        const dcs = this.buildDataCheckString(all)
         const secretKey = this.calcSecretKey()
-        if (this.hmacHex(dataCheckString, secretKey) !== hash) return null
+        const expected = crypto.createHmac('sha256', secretKey).update(dcs).digest('hex')
+
+        if (!this.timingSafeEqualHex(expected, givenHash)) return null
 
         const authDate = Number(all['auth_date'] ?? 0)
-        if (!authDate || Math.floor(Date.now()/1000) - authDate > this.maxAuthAgeSec) return null
+        const now = Math.floor(Date.now() / 1000)
+        if (!authDate || now - authDate > this.maxAuthAgeSec) return null
 
         let user: TelegramUser | null = null
-        try { 
-            user = JSON.parse(all['user'] ?? '{}') 
-        } catch (error) {
-            return null
-        }
+        try { user = JSON.parse(all['user'] ?? '{}') } catch { return null }
         if (!user?.id) return null
 
         return { user, all }
     }
 
+    private decodeStartParam(raw?: string) {
+        if (!raw) return null
+        try {
+            const s = base64UrlToBuffer(raw).toString('utf8')
+            try { return JSON.parse(s) } catch { return { raw: s } }
+        } catch { return null }
+    }
+
     async handleTelegramAuth(
         initData: string,
-        opts?: { startParamRaw?: string; startPayload?: { site_id: string; user_id: string; ts: number; nonce: string; deeplink?: string; sign: string } },
+        _opts?: { startParamRaw?: string }
     ) {
         const valid = this.validateInitData(initData)
         if (!valid) throw new UnauthorizedException('invalid initData')
 
         const tgUserId = String(valid.user.id)
 
-        if (opts?.startPayload) {
-            const siteId = String(opts.startPayload.site_id ?? opts.startPayload.site_id ?? '')
-            const siteUserId = String(opts.startPayload.user_id ?? opts.startPayload.user_id ?? '')
-            if (siteId && siteUserId) {
-                await db
-                    .insert(accountLinks)
-                    .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
-                    .onConflictDoUpdate({
-                        target: [accountLinks.telegramUserId, accountLinks.siteId],
-                        set: { siteUserId, updatedAt: new Date() },
-                    })
-            }
+        // предпочитаем start_param из initData
+        const startPayload = this.decodeStartParam(valid.all['start_param'] || _opts?.startParamRaw)
+        if (startPayload && (startPayload.site_id || startPayload.siteId) && (startPayload.user_id || startPayload.userId)) {
+            const siteId = String(startPayload.site_id ?? startPayload.siteId)
+            const siteUserId = String(startPayload.user_id ?? startPayload.userId)
+            await db.insert(accountLinks)
+                .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
+                .onConflictDoUpdate({
+                    target: [accountLinks.telegramUserId, accountLinks.siteId],
+                    set: { siteUserId, updatedAt: new Date() },
+                })
         }
 
-        const payload = { sub: tgUserId, tp: 'tg' as const }
-        const token = jwt.sign(payload, this.jwtSecret, { expiresIn: this.jwtTtlSec })
+        const token = jwt.sign({ sub: tgUserId, tp: 'tg' as const }, this.jwtSecret, { expiresIn: this.jwtTtlSec }) // seconds
         return { jwt: token, maxAgeMs: this.jwtTtlSec * 1000 }
     }
 
     async findLink(siteId: string, tgUserId: string) {
-        const rows = await db
-            .select()
-            .from(accountLinks)
+        const rows = await db.select().from(accountLinks)
             .where(and(eq(accountLinks.siteId, siteId), eq(accountLinks.telegramUserId, BigInt(tgUserId))))
             .limit(1)
         return rows[0] ?? null
