@@ -1,4 +1,4 @@
-import { decodeStartParamBase64url, getStartParamRaw } from './startParam'
+import { getStartParamRaw } from './startParam'
 
 let firstAuthDone = false
 
@@ -18,8 +18,6 @@ export async function ensureTelegramAuth(apiBase: string) {
         const raw = getStartParamRaw()
         if (raw) {
             body.startParamRaw = raw
-            const decoded = decodeStartParamBase64url(raw)
-            if (decoded != null) body.startPayload = decoded
         }
     }
 

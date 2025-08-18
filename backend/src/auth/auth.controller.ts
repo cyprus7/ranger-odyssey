@@ -6,7 +6,6 @@ import { PinoLogger } from 'nestjs-pino'
 interface TelegramAuthRequest {
     initData: string;
     startParamRaw?: string;
-    startPayload?: { site_id: string; user_id: string; ts: number; nonce: string; deeplink?: string; sign: string };
 }
 
 @Controller('auth')

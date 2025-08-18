@@ -15,9 +15,8 @@ function base64UrlToBuffer(b64url: string) {
 
 @Injectable()
 export class AuthService {
-    // поддержим оба названия переменной окружения
     private readonly botToken = process.env.BOT_TOKEN!
-    private readonly jwtSecret = process.env.JWT_SECRET ?? 'change-me'
+    private readonly jwtSecret = process.env.JWT_SECRET!
     private readonly jwtTtlSec = Number(process.env.JWT_TTL_SEC ?? 15)
     private readonly maxAuthAgeSec = Number(process.env.TG_AUTH_MAX_AGE_SEC ?? 300)
 
@@ -54,20 +53,24 @@ export class AuthService {
         const all = this.parseInitData(initData)
 
         const givenHash = all['hash']
+        console.log('Validating initData:', { all, givenHash })
         if (!givenHash) return null
 
         const dcs = this.buildDataCheckString(all)
         const secretKey = this.calcSecretKey()
         const expected = crypto.createHmac('sha256', secretKey).update(dcs).digest('hex')
 
+        if (!this.timingSafeEqualHex(expected, givenHash)) console.log('Hash mismatch:', { expected, givenHash })
         if (!this.timingSafeEqualHex(expected, givenHash)) return null
 
         const authDate = Number(all['auth_date'] ?? 0)
         const now = Math.floor(Date.now() / 1000)
+        if (!authDate || now - authDate > this.maxAuthAgeSec) console.log('Auth date expired:', { authDate, now })
         if (!authDate || now - authDate > this.maxAuthAgeSec) return null
 
         let user: TelegramUser | null = null
-        try { user = JSON.parse(all['user'] ?? '{}') } catch { return null }
+        try { user = JSON.parse(all['user'] ?? '{}') } catch { console.error('Failed to parse user:', all['user']); return null }
+        if (!user?.id) console.error('User ID is missing:', user)
         if (!user?.id) return null
 
         return { user, all }
