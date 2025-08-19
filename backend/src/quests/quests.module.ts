@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { QuestsController, RewardsController } from './quests.controller'
+import { QuestsController, RewardsController, ProfileController } from './quests.controller'
 import { QuestsService } from './quests.service'
 import { ObservabilityLoggingModule } from '../observability/logging.module'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -9,15 +9,15 @@ import type { QuestProgressStore } from './progress-store.interface'
 
 @Module({
     imports: [ObservabilityLoggingModule],
-    controllers: [QuestsController, RewardsController],
+    controllers: [QuestsController, RewardsController, ProfileController],
     providers: [
         QuestsService,
         RewardService,
         JwtAuthGuard,
-      {
-          provide: 'QuestProgressStore',
-          useClass: PostgresQuestProgressStore
-      } as { provide: string; useClass: new (...args: unknown[]) => QuestProgressStore },
+        {
+            provide: 'QuestProgressStore',
+            useClass: PostgresQuestProgressStore
+        } as { provide: string; useClass: new (...args: unknown[]) => QuestProgressStore },
     ],
 })
 export class QuestsModule {}
