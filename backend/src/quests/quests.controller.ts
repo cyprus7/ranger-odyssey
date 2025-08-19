@@ -39,9 +39,8 @@ export class QuestsController {
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   makeChoice(@CurrentUserId() userId: string, @Body() choiceData: { choiceId: string; day?: string }) {
-      const day = choiceData.day ?? 'day1'
-      this.logger.info({ day, choiceId: choiceData.choiceId }, 'Processing quest choice')
-      const result = this.service.processChoice(userId, day, choiceData.choiceId)
+      this.logger.info({ choiceId: choiceData.choiceId }, 'Processing quest choice')
+      const result = this.service.processChoice(userId, choiceData.choiceId)
       this.logger.info({ result }, 'Quest choice processed')
       return result
   }

@@ -1,11 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
-import { and, eq } from 'drizzle-orm'
-
-import { db } from '../db/drizzle-client'
-import { questDays, questProgress } from '../db/schema'
 import { RewardService } from './reward.service'
-import type { QuestProgressStore } from './progress-store.interface'
+import type { QuestProgressStore, QuestProgressRow } from './progress-store.interface'
+import { questDays, questProgress } from '../db/schema'
+import { db } from '../db/drizzle-client'
+import { and, eq } from 'drizzle-orm'
 
 
 interface Card {
@@ -16,7 +15,7 @@ interface Card {
 interface Scene {
     id: string;
     text: string;
-    choices: { id, label, next }[]
+    choices: { id: string; label: string; next?: string }[]
 }
 
 interface SceneContainer {
@@ -25,33 +24,32 @@ interface SceneContainer {
 }
 
 
-function parseDayNumber(day?: string): number {
-    if (!day) return 1
-    const m = String(day).match(/\d+/)
-    return m ? Math.max(1, Math.min(7, Number(m[0]))) : 1
-}
-
 @Injectable()
 export class QuestsService {
     constructor(
-    private readonly logger: PinoLogger,
-    private readonly rewards: RewardService,
-    @Inject('QuestProgressStore') private readonly progressStore: QuestProgressStore,
+        private readonly logger: PinoLogger,
+        private readonly rewards: RewardService,
+        @Inject('QuestProgressStore') private readonly progressStore: QuestProgressStore,
     ) {
         this.logger.setContext('QuestsService')
     }
 
     async list(userId: string) {
-        const [days, progress] = await Promise.all([
-            db.select().from(questDays).where(eq(questDays.isActive, true)).orderBy(questDays.dayNumber),
-            db.select().from(questProgress).where(eq(questProgress.userId, userId))
-        ])
+        // Получаем все дни и весь прогресс пользователя
+        const days = await db.select().from(questDays).where(eq(questDays.isActive, true)).orderBy(questDays.dayNumber)
+        // Получаем все строки прогресса пользователя
+        // const progressRows = await db.select().from(questDays)
+        // Здесь должен быть select из questProgress, а не questDays:
+        // const progressRows = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
+        // Исправьте на:
+        // const progressRows = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
 
-        const progByDay = new Map(progress.map(r => [r.dayNumber, r]))
-        
+        // Для примера:
+        const userProgress = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
+        const progByDay = new Map(userProgress.map(r => [r.dayNumber, r]))
+
         return days.map(d => {
             const questProgress = progByDay.get(d.dayNumber)
-            
             let questStatus
             if (questProgress) {
                 questStatus = questProgress.status
@@ -68,92 +66,40 @@ export class QuestsService {
         })
     }
 
-    // userId обязателен (из JWT)
     async getQuestState(userId: string) {
-        // наверно надо получать сцены
-        // выбор меняет параметры и переключает сцену - сцену сохраням
-        // целиком квест не отдаем клиенту. только сцену тут
-        // другие методы для работы с квестами - обновление квеста (дня) целиком
-        // для игрока мы кешируем в редисе день и его состояние на минут 30 возможно при обновлении куки обновим ключик - состояние игрок:квест только одно
-        // можно и дни кешировать. может быть отдельный сервис для квестов далее
-
-        // отдавать клиенту выборы без данных об эффктах  {
-        //   "id": "scene_2_choice",
-        //   "text": "Башня гудит. Лис кивает на кристалл...",
-        //   "choices": [
-        //     {"id":"risk_spin","label":"Кручу. Жизнь — игра","effects":[{"type":"grant_fs","value":15},{"type":"tag","key":"risk_pos","op":"inc","value":1}]},
-        //     {"id":"learn_rtp","label":"Где RTP и вейджер?","next":"scene_2_archive","effects":[{"type":"tag","key":"analyst","op":"inc","value":1}]},
-        //     {"id":"skip","label":"Пока пас","effects":[{"type":"tag","key":"risk_avoid","op":"inc","value":1}]}
-        //   ]
-        // }
         let dayNumber = 1
-        let questState = await this.progressStore.startIfNeeded(userId, dayNumber)
+        let questState: QuestProgressRow = await this.progressStore.startIfNeeded(userId, dayNumber)
         while (questState.status !== 'in_progress') {
             dayNumber++
             questState = await this.progressStore.startIfNeeded(userId, dayNumber)
         }
 
-        const questDay = (await db
-            .select()
-            .from(questDays)
-            .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber))))[0] ?? null
-
+        const questDay = await this.getQuestDay(dayNumber)
         if (!questDay) {
-            return {
-                currentScene: {
-                    id: `day${dayNumber}_scene`,
-                    title: `День ${dayNumber} — (stub)`,
-                    description: 'Stub scene for other days.',
-                    image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
-                },
-                choices: [{ id: 'finish', text: 'Завершить' }],
-            }
+            return this.stubScene(dayNumber)
         }
-        //           "day": 1,
-        //   "cards": [
-        //     {
-        //       "id": "scene_1_intro",
-        //       "art": "https://picsum.photos/seed/quest-class/300/200",
-        //       "cta": "Использовать Кристалл"
-        //     }
-        //   ],
-        // let currentSceneId = (questState.state as { currentSceneId?: string }).currentSceneId
 
         const sceneContainer = questDay.scene as SceneContainer
+        let currentSceneId = questState.state && typeof questState.state === 'object'
+            ? (questState.state as { currentSceneId?: string }).currentSceneId
+            : undefined
 
-        let currentSceneId = questState.state ? (questState.state as { currentSceneId?: string }).currentSceneId : null
-        
         if (!currentSceneId) {
-            currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
-
-            await db
-                .update(questProgress)
-                .set({ lastChoiceId: null, state: { currentSceneId }, updatedAt: new Date() })
-                .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
+            currentSceneId = sceneContainer.cards?.[0]?.id
+            await this.progressStore.setChoice(userId, dayNumber, null, { currentSceneId })
         }
 
         const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
-
         if (!currentScene) {
-            return {
-                currentScene: {
-                    id: `day${dayNumber}_scene`,
-                    title: `День ${dayNumber} — (stub for error)`,
-                    description: 'Stub scene for error.',
-                    image: `https://picsum.photos/seed/quest-day-${dayNumber}-/300/200`,
-                },
-                choices: [{ id: 'finish', text: 'Завершить квест' }],
-            }
+            return this.stubScene(dayNumber, true)
         }
 
-        // if (dayNumber === 1) {
         return {
             currentScene: {
                 id: currentSceneId,
                 title: `День ${dayNumber}`,
                 description: currentScene.text,
-            
-                image: sceneContainer.cards?.[0].art,
+                image: sceneContainer.cards?.[0]?.art,
             },
             choices: currentScene.choices.map(({ id, label }) => ({ id, text: label })),
             timer: {
@@ -161,111 +107,42 @@ export class QuestsService {
                 duration_seconds: 1800,
             },
         }
-        // }
-
-        // return {
-        //     currentScene: {
-        //         id: `day${dayNumber}_scene`,
-        //         title: `День ${dayNumber} — (stub)`,
-        //         description: 'Stub scene for other days.',
-        //         image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
-        //     },
-        //     choices: [{ id: 'finish', text: 'Завершить' }],
-        //     timer: {
-        //         ends_at: new Date(Date.now() + 1800_000).toISOString(),
-        //         duration_seconds: 1800,
-        //     },
-        // }
     }
 
-    async processChoice(userId: string, day: string, choiceId: string) {
+    async processChoice(userId: string, choiceId: string) {
         let dayNumber = 1
-        let questState = await this.progressStore.startIfNeeded(userId, dayNumber)
+        let questState: QuestProgressRow = await this.progressStore.startIfNeeded(userId, dayNumber)
         while (questState.status !== 'in_progress') {
             dayNumber++
             questState = await this.progressStore.startIfNeeded(userId, dayNumber)
         }
 
-        const questDay = (await db
-            .select()
-            .from(questDays)
-            .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber))))[0] ?? null
-
+        const questDay = await this.getQuestDay(dayNumber)
         if (!questDay) {
-            return {
-                currentScene: {
-                    id: `day${dayNumber}_scene`,
-                    title: `День ${dayNumber} — (stub)`,
-                    description: `Stub scene for other days...day${dayNumber}_scene`,
-                    image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
-                },
-                choices: [{ id: 'finish', text: 'Завершить' }],
-            }
+            return this.stubScene(dayNumber)
         }
-        //           "day": 1,
-        //   "cards": [
-        //     {
-        //       "id": "scene_1_intro",
-        //       "art": "https://picsum.photos/seed/quest-class/300/200",
-        //       "cta": "Использовать Кристалл"
-        //     }
-        //   ],
-        // let currentSceneId = (questState.state as { currentSceneId?: string }).currentSceneId
 
         const sceneContainer = questDay.scene as SceneContainer
+        let currentSceneId = questState.state && typeof questState.state === 'object'
+            ? (questState.state as { currentSceneId?: string }).currentSceneId
+            : undefined
 
-        let currentSceneId = questState.state ? (questState.state as { currentSceneId?: string }).currentSceneId : null
-        
         if (!currentSceneId) {
-            currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
+            currentSceneId = sceneContainer.cards?.[0]?.id
         }
 
         const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
-
         if (!currentScene) {
-            // возможно следующий день
-            const nextDay = (await db
-                .select()
-                .from(questDays)
-                .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber + 1))))[0] ?? null
-
+            // Попытка перехода к следующему дню, если сцена не найдена
+            const nextDay = await this.getQuestDay(dayNumber + 1)
             if (nextDay) {
-                const sceneContainer = nextDay.scene as SceneContainer
-                const currentScene = sceneContainer.cards?.find(card => card.id === currentSceneId)
-
-                if (!currentScene)
-                    return {
-                        currentScene: {
-                            id: `day${dayNumber}_scene`,
-                            title: `День ${dayNumber} — (stub for error)`,
-                            description: 'Stub scene for error.',
-                            image: `https://picsum.photos/seed/quest-day-${dayNumber}-/300/200`,
-                        },
-                        choices: [{ id: 'finish', text: 'Завершить квест' }],
-                    }
-
-                // goto next day (in transition)
-                await db.transaction(async (trx) => {
-                    await trx
-                        .update(questProgress)
-                        .set({ status: 'completed', updatedAt: new Date() })
-                        .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
-                })
-                return {
-                    success: true,
-                    newScene: {
-                        id: 'stub',
-                        title: 'Stub',
-                        description: 'Stub scene for other days.',
-                        image: 'https://picsum.photos/seed/quest-stub/300/200',
-                    },
-                    choices: [],
-                } 
+                await this.progressStore.complete(userId, dayNumber)
+                return this.stubScene(dayNumber + 1)
             }
+            return this.stubScene(dayNumber, true)
         }
 
         const nextScene = currentScene.choices.find(next => next.id === choiceId)
-
         if (!nextScene) {
             return {
                 success: true,
@@ -276,44 +153,50 @@ export class QuestsService {
                     image: 'https://picsum.photos/seed/quest-stub/300/200',
                 },
                 choices: [],
-            }            
+            }
         }
 
-        // сохраняем
-        await db
-            .update(questProgress)
-            .set({ lastChoiceId: choiceId, state: { currentSceneId: nextScene.next}, updatedAt: new Date() })
-            .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
+        await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: nextScene.next })
 
-        // return {
-        //     currentScene: {
-        //         id: currentSceneId,
-        //         title: `День ${dayNumber}`,
-        //         description: currentScene.text,
-            
-        //         image: sceneContainer.cards?.[0].art,
-        //     },
-        //     choices: currentScene.choices.map(({ id, label }) => ({ id, text: label })),
-        //     timer: {
-        //         ends_at: new Date(Date.now() + 1800_000).toISOString(),
-        //         duration_seconds: 1800,
-        //     },
-        // }
-
-        // return this.getQuestState(userId)
+        // Можно вернуть актуальное состояние через getQuestState, если нужно
         return {
             success: true,
             newScene: {
-                id: choiceId,
+                id: nextScene.next ?? choiceId,
                 title: 'Stub',
                 description: '...',
                 image: 'https://picsum.photos/seed/quest-stub/300/200',
             },
             choices: [],
-        } 
+        }
     }
 
     async getRewards(userId: string) {
         return this.rewards.getAllForUser(userId)
+    }
+
+    // Вспомогательные методы
+    private async getQuestDay(dayNumber: number) {
+        const days = await db
+            .select()
+            .from(questDays)
+            .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber)))
+        return days[0] ?? null
+    }
+
+    private stubScene(dayNumber: number, error = false) {
+        return {
+            currentScene: {
+                id: `day${dayNumber}_scene`,
+                title: error
+                    ? `День ${dayNumber} — (stub for error)`
+                    : `День ${dayNumber} — (stub)`,
+                description: error
+                    ? 'Stub scene for error.'
+                    : 'Stub scene for other days.',
+                image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
+            },
+            choices: [{ id: 'finish', text: 'Завершить квест' }],
+        }
     }
 }
