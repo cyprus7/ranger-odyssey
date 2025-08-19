@@ -24,7 +24,11 @@ export class QuestsService {
     }
 
     async list(userId: string) {
-        const progress = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
+        const [days, progress] = await Promise.all([
+            db.select().from(questDays).where(eq(questDays.isActive, true)).orderBy(questDays.dayNumber),
+            db.select().from(questProgress).where(eq(questProgress.userId, userId))
+        ])
+        
         const progByDay = new Map(progress.map(r => [r.dayNumber, r]))
         
         return days.map(d => {
