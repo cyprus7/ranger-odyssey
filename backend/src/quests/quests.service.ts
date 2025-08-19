@@ -146,14 +146,42 @@ export class QuestsService {
             return this.getQuestState(userId)
         }
 
-        // Если у выбранного варианта нет поля `next` — это означает конец дня.
-        // Сохраняем выбор, помечаем день завершённым и сразу возвращаем состояние (следующий день).
+        // Если у выбранного варианта нет поля `next` — это конец дня.
+        // Сохраняем выбор и переводим день в completed, затем возвращаем новое состояние.
         if (!nextScene.next) {
             await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null })
             await this.progressStore.complete(userId, dayNumber)
             return this.getQuestState(userId)
         }
-        await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: nextScene.next })
+
+        const targetSceneId = nextScene.next
+        // Если target сцена принадлежит текущему дню — обычный переход
+        const targetInCurrent = sceneContainer.scenes?.some(s => s.id === targetSceneId)
+        if (targetInCurrent) {
+            await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: targetSceneId })
+            return this.getQuestState(userId)
+        }
+
+        // Иначе — попробуем найти target в следующем дне (переход между днями)
+        const nextDay = await this.getQuestDay(dayNumber + 1)
+        if (nextDay) {
+            const nextContainer = nextDay.scene as SceneContainer
+            const targetInNext = nextContainer.scenes?.some(s => s.id === targetSceneId)
+            if (targetInNext) {
+                // Сохраняем выбор текущего дня, помечаем его completed
+                await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null })
+                await this.progressStore.complete(userId, dayNumber)
+
+                // Инициализируем следующий день и выставляем в его state нужную сцену
+                await this.progressStore.startIfNeeded(userId, dayNumber + 1)
+                await this.progressStore.setChoice(userId, dayNumber + 1, null, { currentSceneId: targetSceneId })
+                return this.getQuestState(userId)
+            }
+        }
+
+        // Не нашли target ни в текущем, ни в следующем дне — безопасно завершить текущий день
+        await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null })
+        await this.progressStore.complete(userId, dayNumber)
         return this.getQuestState(userId)
     }
 
