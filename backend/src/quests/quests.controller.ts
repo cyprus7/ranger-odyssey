@@ -17,11 +17,14 @@ export class QuestsController {
         this.logger.setContext('QuestsController')
     }
   @Get()
-    async list(@CurrentUserId() userId?: string) {
+  @UseGuards(JwtAuthGuard)
+    async list(@CurrentUserId() userId: string) {
         return this.service.list(userId)
     }
-  @Get('ping') ping() { 
-      return { ok: true } 
+
+  @Get('ping')
+  ping() {
+      return { ok: true }
   }
 
   @Get('state')
