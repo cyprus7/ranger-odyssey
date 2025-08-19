@@ -93,12 +93,12 @@ export class AuthService {
         if (!valid) throw new UnauthorizedException('invalid initData')
 
         const tgUserId = String(valid.user.id)
-
-        // предпочитаем start_param из initData
+        let siteUserId: string | null = null
+        
         const startPayload = this.decodeStartParam(valid.all['start_param'] || _opts?.startParamRaw)
         if (startPayload && (startPayload.site_id || startPayload.siteId) && (startPayload.user_id || startPayload.userId)) {
             const siteId = String(startPayload.site_id ?? startPayload.siteId)
-            const siteUserId = String(startPayload.user_id ?? startPayload.userId)
+            siteUserId = String(startPayload.user_id ?? startPayload.userId)
             await db.insert(accountLinks)
                 .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
                 .onConflictDoUpdate({
@@ -107,7 +107,7 @@ export class AuthService {
                 })
         }
 
-        const token = jwt.sign({ sub: tgUserId, tp: 'tg' as const }, this.jwtSecret, { expiresIn: this.jwtTtlSec }) // seconds
+        const token = jwt.sign({ uId: siteUserId, tgId: tgUserId, tp: 'tg' as const }, this.jwtSecret, { expiresIn: this.jwtTtlSec }) // seconds
         return { jwt: token, maxAgeMs: this.jwtTtlSec * 1000 }
     }
 

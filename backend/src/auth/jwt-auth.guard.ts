@@ -29,9 +29,11 @@ export class JwtAuthGuard implements CanActivate {
         }
         if (!token) throw new UnauthorizedException('missing token')
         try {
-            const payload = jwt.verify(token, this.jwtSecret) as { sub?: string }
-            if (!payload?.sub) throw new Error('no sub')
-            ;(req as Request & { user?: { id: string } }).user = { id: String(payload.sub) }
+            const payload = jwt.verify(token, this.jwtSecret) as { uId?: string, tgId?: string }
+            if (!payload?.uId) {
+                throw new Error('no uId')
+            }
+            (req as Request & { user?: { id: string, tgId: string } }).user = { id: String(payload.uId), tgId: String(payload.tgId) }
             return true
         } catch {
             throw new UnauthorizedException('invalid token')
