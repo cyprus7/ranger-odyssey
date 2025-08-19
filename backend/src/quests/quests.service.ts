@@ -101,7 +101,7 @@ export class QuestsService {
                 description: currentScene.text,
                 image: sceneContainer.cards?.[0]?.art,
             },
-            choices: currentScene.choices.map(({ id, label }) => ({ id, text: label })),
+            choices: (currentScene.choices ?? []).map(({ id, label }) => ({ id, text: label })),
             timer: {
                 ends_at: new Date(Date.now() + 1800_000).toISOString(),
                 duration_seconds: 1800,
@@ -141,7 +141,7 @@ export class QuestsService {
             return this.getQuestState(userId)
         }
 
-        const nextScene = currentScene.choices.find(next => next.id === choiceId)
+        const nextScene = (currentScene.choices ?? []).find(next => next.id === choiceId)
         if (!nextScene) {
             return this.getQuestState(userId)
         }
