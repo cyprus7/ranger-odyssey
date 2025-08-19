@@ -265,7 +265,7 @@ export class QuestsService {
         //     },
         // }
 
-        return getQuestState(userId)
+        return this.getQuestState(userId)
     }
 
     async getRewards(userId: string) {
