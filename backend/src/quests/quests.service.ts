@@ -191,7 +191,7 @@ export class QuestsService {
                 currentScene: {
                     id: `day${dayNumber}_scene`,
                     title: `День ${dayNumber} — (stub)`,
-                    description: 'Stub scene for other days.',
+                    description: `Stub scene for other days...day${dayNumber}_scene`,
                     image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
                 },
                 choices: [{ id: 'finish', text: 'Завершить' }],
@@ -265,7 +265,17 @@ export class QuestsService {
         //     },
         // }
 
-        return this.getQuestState(userId)
+        // return this.getQuestState(userId)
+        return {
+            success: true,
+            newScene: {
+                id: choiceId,
+                title: 'Stub',
+                description: '...',
+                image: 'https://picsum.photos/seed/quest-stub/300/200',
+            },
+            choices: [],
+        } 
     }
 
     async getRewards(userId: string) {
