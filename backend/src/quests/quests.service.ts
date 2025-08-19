@@ -146,6 +146,13 @@ export class QuestsService {
             return this.getQuestState(userId)
         }
 
+        // Если у выбранного варианта нет поля `next` — это означает конец дня.
+        // Сохраняем выбор, помечаем день завершённым и сразу возвращаем состояние (следующий день).
+        if (!nextScene.next) {
+            await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null })
+            await this.progressStore.complete(userId, dayNumber)
+            return this.getQuestState(userId)
+        }
         await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: nextScene.next })
         return this.getQuestState(userId)
     }
