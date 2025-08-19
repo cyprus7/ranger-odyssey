@@ -223,14 +223,44 @@ export class QuestsService {
         const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
 
         if (!currentScene) {
-            return {
-                currentScene: {
-                    id: `day${dayNumber}_scene`,
-                    title: `День ${dayNumber} — (stub for error)`,
-                    description: 'Stub scene for error.',
-                    image: `https://picsum.photos/seed/quest-day-${dayNumber}-/300/200`,
-                },
-                choices: [{ id: 'finish', text: 'Завершить квест' }],
+            // возможно следующий день
+            const nextDay = (await db
+                .select()
+                .from(questDays)
+                .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber + 1))))[0] ?? null
+
+            if (nextDay) {
+                const sceneContainer = nextDay.scene as SceneContainer
+                const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
+
+                if (!currentScene)
+                    return {
+                        currentScene: {
+                            id: `day${dayNumber}_scene`,
+                            title: `День ${dayNumber} — (stub for error)`,
+                            description: 'Stub scene for error.',
+                            image: `https://picsum.photos/seed/quest-day-${dayNumber}-/300/200`,
+                        },
+                        choices: [{ id: 'finish', text: 'Завершить квест' }],
+                    }
+
+                // goto next day (in transition)
+                await db.transaction(async (trx) => {
+                    await trx
+                        .update(questProgress)
+                        .set({ status: 'completed', updatedAt: new Date() })
+                        .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
+                })
+                return {
+                    success: true,
+                    newScene: {
+                        id: 'stub',
+                        title: 'Stub',
+                        description: 'Stub scene for other days.',
+                        image: 'https://picsum.photos/seed/quest-stub/300/200',
+                    },
+                    choices: [],
+                } 
             }
         }
 
