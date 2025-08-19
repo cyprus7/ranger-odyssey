@@ -65,7 +65,7 @@ export default function QuestsPage() {
         logger.info({ choiceId }, 'Submitting quest choice...')
         setLoading(true)
         try {
-            const data = await fetchJson<{ newScene: QuestState['currentScene'] }>(
+            const data = await fetchJson<QuestState>(
                 `${api}/api/quests/choice`,
                 {
                     method: 'PUT',
@@ -75,17 +75,7 @@ export default function QuestsPage() {
                 api
             )
             logger.info({ result: data }, 'Quest choice submitted')
-            setQuestState(prev => prev ? { ...prev, currentScene: data.newScene, choices: [] } : null)
-
-            // Повторный запрос состояния квеста после ответа
-            try {
-                logger.info('Refreshing quest state...')
-                const s = await fetchJson<QuestState>(`${api}/api/quests/state`, undefined, api)
-                setQuestState(s)
-            } catch (e) {
-                logger.error({ e }, 'Failed to refresh quest state')
-                setError(e instanceof Error ? e.message : String(e))
-            }
+            setQuestState(data)
         } catch (e) {
             logger.error({ e }, 'Failed to submit quest choice')
             setError(e instanceof Error ? e.message : String(e))

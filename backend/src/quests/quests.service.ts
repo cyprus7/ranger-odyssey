@@ -119,7 +119,7 @@ export class QuestsService {
 
         const questDay = await this.getQuestDay(dayNumber)
         if (!questDay) {
-            return this.stubScene(dayNumber)
+            return this.getQuestState(userId)
         }
 
         const sceneContainer = questDay.scene as SceneContainer
@@ -133,42 +133,21 @@ export class QuestsService {
 
         const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
         if (!currentScene) {
-            // Попытка перехода к следующему дню, если сцена не найдена
             const nextDay = await this.getQuestDay(dayNumber + 1)
             if (nextDay) {
                 await this.progressStore.complete(userId, dayNumber)
-                return this.stubScene(dayNumber + 1)
+                return this.getQuestState(userId)
             }
-            return this.stubScene(dayNumber, true)
+            return this.getQuestState(userId)
         }
 
         const nextScene = currentScene.choices.find(next => next.id === choiceId)
         if (!nextScene) {
-            return {
-                success: true,
-                newScene: {
-                    id: 'stub',
-                    title: 'Stub',
-                    description: 'Stub scene for other days.',
-                    image: 'https://picsum.photos/seed/quest-stub/300/200',
-                },
-                choices: [],
-            }
+            return this.getQuestState(userId)
         }
 
         await this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: nextScene.next })
-
-        // Можно вернуть актуальное состояние через getQuestState, если нужно
-        return {
-            success: true,
-            newScene: {
-                id: nextScene.next ?? choiceId,
-                title: 'Stub',
-                description: '...',
-                image: 'https://picsum.photos/seed/quest-stub/300/200',
-            },
-            choices: [],
-        }
+        return this.getQuestState(userId)
     }
 
     async getRewards(userId: string) {
