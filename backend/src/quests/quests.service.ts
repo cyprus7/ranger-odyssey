@@ -231,7 +231,7 @@ export class QuestsService {
 
             if (nextDay) {
                 const sceneContainer = nextDay.scene as SceneContainer
-                const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
+                const currentScene = sceneContainer.cards?.find(card => card.id === currentSceneId)
 
                 if (!currentScene)
                     return {
