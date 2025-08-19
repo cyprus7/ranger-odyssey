@@ -19,7 +19,9 @@ export class QuestsController {
   @Get()
   @UseGuards(JwtAuthGuard)
     async list(@CurrentUserId() userId: string) {
-        return this.service.list(userId)
+        const result = await this.service.list(userId)
+        this.logger.info({ result }, 'Returned quests list')
+        return result
     }
 
   @Get('ping')
@@ -29,8 +31,8 @@ export class QuestsController {
 
   @Get('state')
   @UseGuards(JwtAuthGuard)
-  getQuestState(@CurrentUserId() userId: string) {
-      const state = this.service.getQuestState(userId)
+  async getQuestState(@CurrentUserId() userId: string) {
+      const state = await this.service.getQuestState(userId)
       this.logger.info({ state }, 'Returned quest state')
       return state
   }
@@ -38,9 +40,9 @@ export class QuestsController {
   @Put('choice')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  makeChoice(@CurrentUserId() userId: string, @Body() choiceData: { choiceId: string; day?: string }) {
+  async makeChoice(@CurrentUserId() userId: string, @Body() choiceData: { choiceId: string; day?: string }) {
       this.logger.info({ choiceId: choiceData.choiceId }, 'Processing quest choice')
-      const result = this.service.processChoice(userId, choiceData.choiceId)
+      const result = await this.service.processChoice(userId, choiceData.choiceId)
       this.logger.info({ result }, 'Quest choice processed')
       return result
   }
