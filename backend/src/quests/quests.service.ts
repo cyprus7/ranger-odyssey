@@ -28,12 +28,18 @@ export class QuestsService {
             db.select().from(questDays).where(eq(questDays.isActive, true)).orderBy(questDays.dayNumber),
             db.select().from(questProgress).where(eq(questProgress.userId, userId))
         ])
-        
+
         const progByDay = new Map(progress.map(r => [r.dayNumber, r]))
         
         return days.map(d => {
             const questProgress = progByDay.get(d.dayNumber)
-            const questStatus = questProgress ? questProgress.status : 'locked'
+            
+            let questStatus
+            if (questProgress) {
+                questStatus = questProgress.status
+            } else if (d.dayNumber === 1) {
+                questStatus = d.dayNumber === 1 ? 'available' : 'locked'
+            }
             return {
                 id: `day${d.dayNumber}`,
                 title: d.title,
