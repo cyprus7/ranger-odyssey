@@ -1,11 +1,29 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { db } from '../db/drizzle-client'
 import { questDays, questProgress } from '../db/schema'
 import { RewardService } from './reward.service'
 import type { QuestProgressStore } from './progress-store.interface'
+
+
+interface Card {
+    id: string;
+    art?: string;
+}
+
+interface Scene {
+    id: string;
+    text: string;
+    choices: { id, label }[]
+}
+
+interface SceneContainer {
+    cards?: Card[];
+    scenes?: Scene[];
+}
+
 
 function parseDayNumber(day?: string): number {
     if (!day) return 1
@@ -51,7 +69,7 @@ export class QuestsService {
     }
 
     // userId обязателен (из JWT)
-    async getQuestState(userId: string, day: string = 'day1') {
+    async getQuestState(userId: string) {
         // наверно надо получать сцены
         // выбор меняет параметры и переключает сцену - сцену сохраням
         // целиком квест не отдаем клиенту. только сцену тут
@@ -68,44 +86,91 @@ export class QuestsService {
         //     {"id":"skip","label":"Пока пас","effects":[{"type":"tag","key":"risk_avoid","op":"inc","value":1}]}
         //   ]
         // }
-        const dayNumber = parseDayNumber(day)
-        await this.progressStore.startIfNeeded(userId, dayNumber)
+        let dayNumber = 1
+        let questState = await this.progressStore.startIfNeeded(userId, dayNumber)
+        while (questState.status !== 'in_progress') {
+            dayNumber++
+            questState = await this.progressStore.startIfNeeded(userId, dayNumber)
+        }
 
-        if (dayNumber === 1) {
+        const questDay = (await db
+            .select()
+            .from(questDays)
+            .where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber))))[0] ?? null
+
+        if (!questDay) {
             return {
                 currentScene: {
-                    id: 'scene_1_intro',
-                    title: 'День 1 — Пробуждение в Городе Мостбет',
-                    description:
-            '«Всё началось с хлопка. Того самого, который услышал только ты. Мир рассыпался на пиксели, а ты — почему-то цел. Ты не герой. Но и не статист. Твоё имя еще никто не запомнил. Исправим?»\n\nТы пришёл не по своей воле. Или по своей?\n\nТебя встретил дед в халате с фиолетовыми звездами и авоськой, полной фриспинов. Он представился Астральным Инструктажником и молча протянул тебе табличку с вопросом:\n\n❓ Что ты вообще здесь делаешь, смертный?',
-                    image: 'https://picsum.photos/seed/quest1/300/200',
+                    id: `day${dayNumber}_scene`,
+                    title: `День ${dayNumber} — (stub)`,
+                    description: 'Stub scene for other days.',
+                    image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
                 },
-                choices: [
-                    { id: 'escapist', text: '“А можно не объяснять? Я просто хочу забыться.” 🔹 Эскапист / 🧬 Погружённый' },
-                    { id: 'controller', text: '“Что за система? Где таблицы выплат и скрытые коэффициенты?” 🔹 Контролёр / 🧠 Аналитик' },
-                    { id: 'predator', text: '“Судя по тебе — тут можно выигрывать. Я зашёл за победой.” 🔹 Хищник / 🧱 Гриндер' },
-                    { id: 'mystic', text: '“Просто чувствовал… что должен быть здесь. Всё совпало.” 🔹 Мистик / 🪞 Нарративный' },
-                ],
-                timer: {
-                    ends_at: new Date(Date.now() + 1800_000).toISOString(),
-                    duration_seconds: 1800,
+                choices: [{ id: 'finish', text: 'Завершить' }],
+            }
+        }
+        //           "day": 1,
+        //   "cards": [
+        //     {
+        //       "id": "scene_1_intro",
+        //       "art": "https://picsum.photos/seed/quest-class/300/200",
+        //       "cta": "Использовать Кристалл"
+        //     }
+        //   ],
+        // let currentSceneId = (questState.state as { currentSceneId?: string }).currentSceneId
+
+        const sceneContainer = questDay.scene as SceneContainer
+
+        let currentSceneId = sceneContainer.cards?.[0]?.id
+        
+        if (!currentSceneId) {
+            currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
+        }
+
+        const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
+
+        if (!currentScene) {
+            return {
+                currentScene: {
+                    id: `day${dayNumber}_scene`,
+                    title: `День ${dayNumber} — (stub for error)`,
+                    description: 'Stub scene for error.',
+                    image: `https://picsum.photos/seed/quest-day-${dayNumber}-/300/200`,
                 },
+                choices: [{ id: 'finish', text: 'Завершить квест' }],
             }
         }
 
+        // if (dayNumber === 1) {
         return {
             currentScene: {
-                id: `day${dayNumber}_scene`,
-                title: `День ${dayNumber} — (stub)`,
-                description: 'Stub scene for other days.',
-                image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
+                id: currentSceneId,
+                title: `День ${dayNumber}`,
+                description: currentScene.text,
+            
+                image: sceneContainer.cards?.[0].art,
             },
-            choices: [{ id: 'finish', text: 'Завершить' }],
+            choices: currentScene.choices.map(({ id, label }) => ({ id, text: label })),
             timer: {
                 ends_at: new Date(Date.now() + 1800_000).toISOString(),
                 duration_seconds: 1800,
             },
         }
+        // }
+
+        // return {
+        //     currentScene: {
+        //         id: `day${dayNumber}_scene`,
+        //         title: `День ${dayNumber} — (stub)`,
+        //         description: 'Stub scene for other days.',
+        //         image: `https://picsum.photos/seed/quest-day-${dayNumber}/300/200`,
+        //     },
+        //     choices: [{ id: 'finish', text: 'Завершить' }],
+        //     timer: {
+        //         ends_at: new Date(Date.now() + 1800_000).toISOString(),
+        //         duration_seconds: 1800,
+        //     },
+        // }
     }
 
     async processChoice(userId: string, day: string, choiceId: string) {
