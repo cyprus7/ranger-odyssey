@@ -3,7 +3,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { eq } from 'drizzle-orm'
 
 import { db } from '../db/drizzle-client'
-import { questDays } from '../db/schema'
+import { questDays, questProgress } from '../db/schema'
 import { RewardService } from './reward.service'
 import type { QuestProgressStore } from './progress-store.interface'
 
@@ -23,14 +23,33 @@ export class QuestsService {
         this.logger.setContext('QuestsService')
     }
 
-    async list() {
+    async list(userId: string | undefined) {
         const days = await db.select().from(questDays).orderBy(questDays.dayNumber)
-        return days.map(d => ({
-            id: `day${d.dayNumber}`,
-            title: d.title,
-            subtitle: d.subtitle,
-            progress: 0,
-        }))
+        if (!userId) {
+            return days.map(d => ({
+                id: `day${d.dayNumber}`,
+                title: d.title,
+                subtitle: d.subtitle,
+                status: 'locked',
+                progress: 0,
+            }))
+        }
+
+        const progress = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
+        const progByDay = new Map(progress.map(r => [r.dayNumber, r]))
+        
+        return days.map(d => {
+            const questProgress = progByDay.get(d.dayNumber)
+            const questStatus = questProgress ? questProgress.status : 'locked'
+            return {
+                id: `day${d.dayNumber}`,
+                title: d.title,
+                subtitle: d.subtitle,
+                status: questStatus === 'not_started' ? 'available' : questStatus,
+                progress: 0,
+            }
+        })
+        
     }
 
     // userId обязателен (из JWT)

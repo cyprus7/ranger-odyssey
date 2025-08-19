@@ -16,8 +16,9 @@ export class QuestsController {
     ) {
         this.logger.setContext('QuestsController')
     }
-  @Get() async list() {
-        return this.service.list()
+  @Get()
+    async list(@CurrentUserId() userId?: string) {
+        return this.service.list(userId)
     }
   @Get('ping') ping() { 
       return { ok: true } 
