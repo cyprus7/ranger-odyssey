@@ -125,6 +125,11 @@ export class QuestsService {
         
         if (!currentSceneId) {
             currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
+
+            await db
+                .update(questProgress)
+                .set({ lastChoiceId: null, state: { currentSceneId }, updatedAt: new Date() })
+                .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
         }
 
         const currentScene = sceneContainer.scenes?.find(scene => scene.id === currentSceneId)
@@ -229,9 +234,9 @@ export class QuestsService {
             }
         }
 
-        const nextSceneId = currentScene.choices.find(next => next.next === choiceId)
+        const nextScene = currentScene.choices.find(next => next.id === choiceId)
 
-        if (!nextSceneId) {
+        if (!nextScene) {
             return {
                 success: true,
                 newScene: {
@@ -247,7 +252,7 @@ export class QuestsService {
         // сохраняем
         await db
             .update(questProgress)
-            .set({ lastChoiceId: choiceId, state: { currentSceneId: nextSceneId}, updatedAt: new Date() })
+            .set({ lastChoiceId: choiceId, state: { currentSceneId: nextScene.next}, updatedAt: new Date() })
             .where(and(eq(questProgress.userId, userId), eq(questProgress.dayNumber, dayNumber)))
 
         // return {
