@@ -121,7 +121,7 @@ export class QuestsService {
 
         const sceneContainer = questDay.scene as SceneContainer
 
-        let currentSceneId = (questState.state as { currentSceneId?: string }).currentSceneId
+        let currentSceneId = questState.state ? (questState.state as { currentSceneId?: string }).currentSceneId : null
         
         if (!currentSceneId) {
             currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
@@ -209,7 +209,7 @@ export class QuestsService {
 
         const sceneContainer = questDay.scene as SceneContainer
 
-        let currentSceneId = (questState.state as { currentSceneId?: string }).currentSceneId
+        let currentSceneId = questState.state ? (questState.state as { currentSceneId?: string }).currentSceneId : null
         
         if (!currentSceneId) {
             currentSceneId = (questDay.scene as { cards?: Card[] }).cards?.[0]?.id
