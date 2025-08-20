@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, KeyboardEvent } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 
 type Props = {
     maxLength?: number
@@ -22,7 +22,7 @@ export default function NamePicker({ maxLength = 12, onConfirm, onCancel, initia
     }, [])
 
     useEffect(() => {
-        const handler = (ev: KeyboardEvent) => {
+        const handler = function (this: Window, ev: KeyboardEvent) {
             const key = ev.key
             if (!key) return
             if (key === 'Backspace') {
