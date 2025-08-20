@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import * as crypto from 'crypto'
 import * as jwt from 'jsonwebtoken'
 import { db } from '../db/drizzle-client'
-import { accountLinks } from '../db/schema'
+import { accountLinks, profiles } from '../db/schema'
 import { and, eq } from 'drizzle-orm'
 
 type TelegramUser = { id: number; username?: string; first_name?: string; last_name?: string }
@@ -108,7 +108,26 @@ export class AuthService {
         }
 
         const token = jwt.sign({ uId: siteUserId, tgId: tgUserId, tp: 'tg' as const }, this.jwtSecret, { expiresIn: this.jwtTtlSec }) // seconds
-        return { jwt: token, maxAgeMs: this.jwtTtlSec * 1000 }
+
+        // try to read existing player name from profiles (if any)
+        let playerName: string | null = null
+        try {
+            if (siteUserId) {
+                const rows = await db.select().from(profiles).where(eq(profiles.userId, siteUserId)).limit(1)
+                const row = rows[0] ?? null
+                if (row) {
+                    const profileRow = row as { playerName?: string | null }
+                    if (typeof profileRow.playerName === 'string' && profileRow.playerName.length > 0) {
+                        playerName = profileRow.playerName
+                    }
+                }
+            }
+        } catch {
+            // ignore DB errors here — auth should still succeed
+            playerName = null
+        }
+        
+        return { jwt: token, maxAgeMs: this.jwtTtlSec * 1000, player_name: playerName }
     }
 
     async findLink(siteId: string, tgUserId: string) {

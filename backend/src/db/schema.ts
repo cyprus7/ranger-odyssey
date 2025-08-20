@@ -78,6 +78,7 @@ export const profiles = pgTable(
     {
         id: uuid('id').defaultRandom().primaryKey(),
         userId: text('user_id').notNull().unique(),
+        playerName: text('player_name'), // NEW: optional player name shown to others
         mainType: text('main_type'),
         mainPsychotype: text('main_psychotype'),
         confidence: text('confidence'), // хранить число как текст/decimal -- можно менять на real/float при необходимости

@@ -26,7 +26,7 @@ export class AuthController {
         if (!initData) throw new BadRequestException('initData required')
 
         try {
-            const { jwt, maxAgeMs } = await this.auth.handleTelegramAuth(
+            const { jwt, maxAgeMs, player_name } = await this.auth.handleTelegramAuth(
                 initData,
                 { startParamRaw },
             )
@@ -41,7 +41,7 @@ export class AuthController {
                     maxAge: maxAgeMs,
                 },
             )
-            return { ok: true }
+            return { ok: true, player_name: player_name ?? null }
         } catch (error) {
             this.logger.error({ err: error }, 'Telegram auth failed')  // логируем полный стектрейс
             throw error

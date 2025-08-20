@@ -135,4 +135,26 @@ export class ProfileController {
             stats,
         }
     }
+
+    @Put()
+    @UseGuards(JwtAuthGuard)
+    async updateProfile(@CurrentUserId() userId: string, @Body() body: { player_name?: string }) {
+        const playerName = body?.player_name ?? null
+        this.logger.info({ userId, playerName }, 'Updating profile player_name')
+        // upsert profile row (create if missing) and set playerName
+        await db.insert(profiles).values({
+            userId,
+            playerName,
+            mainType: null,
+            mainPsychotype: null,
+            confidence: '0',
+            inventory: JSON.stringify([]),
+            tags: JSON.stringify({}),
+            stats: JSON.stringify({}),
+        }).onConflictDoUpdate({
+            target: [profiles.userId],
+            set: { playerName, updatedAt: new Date() },
+        })
+        return { ok: true, player_name: playerName }
+    }
 }

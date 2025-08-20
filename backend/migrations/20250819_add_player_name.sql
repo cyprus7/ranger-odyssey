@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS profiles
+ADD COLUMN IF NOT EXISTS player_name text;
