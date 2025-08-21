@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, HttpCode, UseGuards, Param, Post } from '@nestjs/common'
+import { Controller, Get, Put, Body, HttpCode, UseGuards, Param, Post, BadRequestException } from '@nestjs/common'
 import { QuestsService } from './quests.service'
 import { PinoLogger } from 'nestjs-pino'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -87,8 +87,12 @@ export class ProfileController {
 
     @Get()
     @UseGuards(JwtAuthGuard)
-    async getProfile(@CurrentProfileId() id: string) {
+    async getProfile(@CurrentProfileId() id: string | null) {
         this.logger.info({ id }, 'Fetching profile')
+        if (!id) {
+            this.logger.warn('Profile id is missing in token/cookie')
+            throw new BadRequestException('profile id is missing')
+        }
         // determine whether id is internal profile id (uuid) or legacy siteUserId (text)
         const isUuid = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id)
         const rows = isUuid
@@ -143,9 +147,13 @@ export class ProfileController {
 
     @Put()
     @UseGuards(JwtAuthGuard)
-    async updateProfile(@CurrentProfileId() id: string, @Body() body: { player_name?: string }) {
+    async updateProfile(@CurrentProfileId() id: string | null, @Body() body: { player_name?: string }) {
         const playerName = body?.player_name ?? null
         this.logger.info({ id, playerName }, 'Updating profile player_name')
+        if (!id) {
+            this.logger.warn('Profile id is missing in token/cookie (updateProfile)')
+            throw new BadRequestException('profile id is missing')
+        }
         const isUuid = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id)
         if (isUuid) {
             // update by internal id

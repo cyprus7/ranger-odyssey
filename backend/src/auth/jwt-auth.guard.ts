@@ -29,11 +29,17 @@ export class JwtAuthGuard implements CanActivate {
         }
         if (!token) throw new UnauthorizedException('missing token')
         try {
-            const payload = jwt.verify(token, this.jwtSecret) as { uId?: string, tgId?: string }
+            const payload = jwt.verify(token, this.jwtSecret) as { uId?: string, tgId?: string, pid?: string }
             if (!payload?.uId) {
                 throw new Error('no uId')
             }
-            (req as Request & { user?: { id: string, tgId: string } }).user = { id: String(payload.uId), tgId: String(payload.tgId) }
+            // Build a minimal user object and include pid when present.
+            const userObj: { id: string; tgId?: string; pid?: string } = { id: String(payload.uId) }
+            if (payload.tgId !== undefined) userObj.tgId = String(payload.tgId)
+            if (payload.pid !== undefined && payload.pid !== null) {
+                userObj.pid = String(payload.pid)
+            }
+            (req as Request & { user?: Record<string, unknown> }).user = userObj
             return true
         } catch {
             throw new UnauthorizedException('invalid token')
