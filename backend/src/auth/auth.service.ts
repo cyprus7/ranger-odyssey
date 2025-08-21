@@ -94,7 +94,8 @@ export class AuthService {
 
         const tgUserId = String(valid.user.id)
         let siteUserId: string | null = null
-        
+        let profileId: string | null = null
+
         const startPayload = this.decodeStartParam(valid.all['start_param'] || _opts?.startParamRaw)
         if (startPayload && (startPayload.site_id || startPayload.siteId) && (startPayload.user_id || startPayload.userId)) {
             const siteId = String(startPayload.site_id ?? startPayload.siteId)
@@ -105,25 +106,56 @@ export class AuthService {
                     target: [accountLinks.telegramUserId, accountLinks.siteId],
                     set: { siteUserId, updatedAt: new Date() },
                 })
+
+            // Ensure a profiles row exists for this site user and update minimal fields.
+            await db.insert(profiles).values({
+                userId: siteUserId,
+                playerName: null,
+                mainType: null,
+                mainPsychotype: null,
+                confidence: '0',
+                inventory: JSON.stringify([]),
+                tags: JSON.stringify({}),
+                stats: JSON.stringify({}),
+            }).onConflictDoUpdate({
+                target: [profiles.userId],
+                set: { playerName: null, updatedAt: new Date() },
+            })
+
+            // Load profile to obtain internal UUID (typed)
+            const prow = await db.select().from(profiles).where(eq(profiles.userId, siteUserId)).limit(1)
+            const pRow = prow[0] ?? null
+            if (pRow && typeof (pRow as { id?: unknown }).id === 'string') {
+                profileId = (pRow as { id?: string }).id as string
+            }
         }
 
-        const token = jwt.sign({ uId: siteUserId, tgId: tgUserId, tp: 'tg' as const }, this.jwtSecret, { expiresIn: this.jwtTtlSec }) // seconds
+        // Keep uId as siteUserId (do not override). Add pid claim with internal profile id if present.
+        const token = jwt.sign(
+            { uId: siteUserId, pid: profileId ?? null, tgId: tgUserId, tp: 'tg' as const },
+            this.jwtSecret,
+            { expiresIn: this.jwtTtlSec }
+        ) // seconds
 
-        // try to read existing player name from profiles (if any)
+        // try to read existing player name from profiles (if any) using typed rows
         let playerName: string | null = null
         try {
-            if (siteUserId) {
+            if (profileId) {
+                const rows = await db.select().from(profiles).where(eq(profiles.id, profileId)).limit(1)
+                const row = rows[0] ?? null
+                if (row && typeof (row as { playerName?: unknown }).playerName === 'string') {
+                    const pn = (row as { playerName?: string }).playerName
+                    if (pn) playerName = pn
+                }
+            } else if (siteUserId) {
                 const rows = await db.select().from(profiles).where(eq(profiles.userId, siteUserId)).limit(1)
                 const row = rows[0] ?? null
-                if (row) {
-                    const profileRow = row as { playerName?: string | null }
-                    if (typeof profileRow.playerName === 'string' && profileRow.playerName.length > 0) {
-                        playerName = profileRow.playerName
-                    }
+                if (row && typeof (row as { playerName?: unknown }).playerName === 'string') {
+                    const pn = (row as { playerName?: string }).playerName
+                    if (pn) playerName = pn
                 }
             }
         } catch {
-            // ignore DB errors here — auth should still succeed
             playerName = null
         }
         

@@ -3,6 +3,7 @@ import { QuestsService } from './quests.service'
 import { PinoLogger } from 'nestjs-pino'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CurrentUserId } from '../auth/current-user.decorator'
+import { CurrentProfileId } from '../auth/current-profileid.decorator'
 import { RewardService } from './reward.service'
 import { db } from '../db/drizzle-client'
 import { profiles } from '../db/schema'
@@ -18,9 +19,9 @@ export class QuestsController {
     }
   @Get()
   @UseGuards(JwtAuthGuard)
-    async list(@CurrentUserId() userId: string) {
-        const result = await this.service.list(userId)
-        this.logger.info({ result }, 'Returned quests list')
+    async list(@CurrentUserId() id: string) {
+        const result = await this.service.list(id)
+        this.logger.info({ id, result }, 'Returned quests list')
         return result
     }
 
@@ -31,19 +32,19 @@ export class QuestsController {
 
   @Get('state')
   @UseGuards(JwtAuthGuard)
-  async getQuestState(@CurrentUserId() userId: string) {
-      const state = await this.service.getQuestState(userId)
-      this.logger.info({ state }, 'Returned quest state')
+  async getQuestState(@CurrentUserId() id: string) {
+      const state = await this.service.getQuestState(id)
+      this.logger.info({ id, state }, 'Returned quest state')
       return state
   }
 
   @Put('choice')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  async makeChoice(@CurrentUserId() userId: string, @Body() choiceData: { choiceId: string; day?: string }) {
-      this.logger.info({ choiceId: choiceData.choiceId }, 'Processing quest choice')
-      const result = await this.service.processChoice(userId, choiceData.choiceId)
-      this.logger.info({ result }, 'Quest choice processed')
+  async makeChoice(@CurrentUserId() id: string, @Body() choiceData: { choiceId: string; day?: string }) {
+      this.logger.info({ id, choiceId: choiceData.choiceId }, 'Processing quest choice')
+      const result = await this.service.processChoice(id, choiceData.choiceId)
+      this.logger.info({ id, result }, 'Quest choice processed')
       return result
   }
 }
@@ -60,19 +61,19 @@ export class RewardsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-    getRewards(@CurrentUserId() userId: string) {
-        const rewards = this.questsService.getRewards(userId)
-        this.logger.info({ rewards }, 'Returned rewards')
+    getRewards(@CurrentUserId() id: string) {
+        const rewards = this.questsService.getRewards(id)
+        this.logger.info({ id, rewards }, 'Returned rewards')
         return rewards
     }
 
   // Переход статуса: accrued -> issuing -> claimed (здесь — сразу до claimed, как заглушка)
   @Post(':day/claim')
   @UseGuards(JwtAuthGuard)
-  async claim(@CurrentUserId() userId: string, @Param('day') day: string) {
+  async claim(@CurrentUserId() id: string, @Param('day') day: string) {
       const dayNumber = Number(String(day).match(/\d+/)?.[0] ?? 1)
       // идемпотентно: выставляем claimed
-      await this.rewards.setStatus(userId, dayNumber, 'claimed')
+      await this.rewards.setStatus(id, dayNumber, 'claimed')
       return { ok: true, day: dayNumber, status: 'claimed' }
   }
 }
@@ -86,15 +87,19 @@ export class ProfileController {
 
     @Get()
     @UseGuards(JwtAuthGuard)
-    async getProfile(@CurrentUserId() userId: string) {
-        this.logger.info({ userId }, 'Fetching profile')
-        const rows = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+    async getProfile(@CurrentProfileId() id: string) {
+        this.logger.info({ id }, 'Fetching profile')
+        // determine whether id is internal profile id (uuid) or legacy siteUserId (text)
+        const isUuid = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id)
+        const rows = isUuid
+            ? await db.select().from(profiles).where(eq(profiles.id, id)).limit(1)
+            : await db.select().from(profiles).where(eq(profiles.userId, id)).limit(1)
         const row = rows[0] ?? null
 
         if (!row) {
             // insert defaults (empty inventory and tags)
             await db.insert(profiles).values({
-                userId,
+                userId: id,
                 mainType: null,
                 mainPsychotype: null,
                 confidence: '0',
@@ -111,7 +116,7 @@ export class ProfileController {
                 inventory: [],
                 stats: {},
             }
-            this.logger.info({ userId }, 'Profile initialized (defaults)')
+            this.logger.info({ id }, 'Profile initialized (defaults)')
             return defaultProfile
         }
 
@@ -138,23 +143,32 @@ export class ProfileController {
 
     @Put()
     @UseGuards(JwtAuthGuard)
-    async updateProfile(@CurrentUserId() userId: string, @Body() body: { player_name?: string }) {
+    async updateProfile(@CurrentProfileId() id: string, @Body() body: { player_name?: string }) {
         const playerName = body?.player_name ?? null
-        this.logger.info({ userId, playerName }, 'Updating profile player_name')
-        // upsert profile row (create if missing) and set playerName
-        await db.insert(profiles).values({
-            userId,
-            playerName,
-            mainType: null,
-            mainPsychotype: null,
-            confidence: '0',
-            inventory: JSON.stringify([]),
-            tags: JSON.stringify({}),
-            stats: JSON.stringify({}),
-        }).onConflictDoUpdate({
-            target: [profiles.userId],
-            set: { playerName, updatedAt: new Date() },
-        })
+        this.logger.info({ id, playerName }, 'Updating profile player_name')
+        const isUuid = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id)
+        if (isUuid) {
+            // update by internal id
+            await db
+                .update(profiles)
+                .set({ playerName, updatedAt: new Date() })
+                .where(eq(profiles.id, id))
+        } else {
+            // upsert by userId
+            await db.insert(profiles).values({
+                userId: id,
+                playerName,
+                mainType: null,
+                mainPsychotype: null,
+                confidence: '0',
+                inventory: JSON.stringify([]),
+                tags: JSON.stringify({}),
+                stats: JSON.stringify({}),
+            }).onConflictDoUpdate({
+                target: [profiles.userId],
+                set: { playerName, updatedAt: new Date() },
+            })
+        }
         return { ok: true, player_name: playerName }
     }
 }
