@@ -6,10 +6,10 @@ let firstAuthDone = false
  * Авторизация: отправляем initData + (однократно) декодированный startapp payload.
  * Бэк валидирует initData и ставит httpOnly cookie с JWT на 15 минут.
  */
-export async function ensureTelegramAuth(apiBase: string): Promise<string | null> {
+export async function ensureTelegramAuth(apiBase: string): Promise<string | null | undefined> {
     const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
     const initData = tg?.initData
-    if (!initData) return null // Вне Telegram — пропускаем (гость)
+    if (!initData) return undefined // Вне Telegram — пропускаем (гость)
 
     const body: Record<string, unknown> = { initData }
 
