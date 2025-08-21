@@ -119,7 +119,8 @@ export class AuthService {
                 stats: JSON.stringify({}),
             }).onConflictDoUpdate({
                 target: [profiles.userId],
-                set: { playerName: null, updatedAt: new Date() },
+                // Do not overwrite existing playerName on conflict — only touch updatedAt (keep prior playerName)
+                set: { updatedAt: new Date() },
             })
 
             // Load profile to obtain internal UUID (typed)
