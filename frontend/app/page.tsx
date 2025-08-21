@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import FooterNav from './components/FooterNav'
 import { useRouter } from 'next/navigation'
-import { ensureTelegramAuth, fetchJson } from './utils/auth'
+import { ensureTelegramAuth, fetchJson, putJson } from './utils/auth'
+import NamePicker from './components/NamePicker'
 
 type Quest = {
   id: string;
@@ -15,32 +16,81 @@ type Quest = {
 export default function HomePage() {
     const [quests, setQuests] = useState<Quest[] | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [showNameModal, setShowNameModal] = useState(false)
+    const [pendingFetchAfterName, setPendingFetchAfterName] = useState(false)
+    const [playerNameInitial, setPlayerNameInitial] = useState<string | null>(null)
     const api = process.env.NEXT_PUBLIC_API_URL || ''
     const router = useRouter()
 
     useEffect(() => {
         (async () => {
             try {
-                await ensureTelegramAuth(api) // cookie c JWT на 15 мин
+                setLoading(true)
+                // ensure auth and ask for player name if server indicates missing name
+                const playerName = await ensureTelegramAuth(api)
+                if (playerName === null) {
+                    // prefill from Telegram first_name if available
+                    const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : undefined
+
+                    // Safely extract initDataUnsafe without using `any`
+                    const initDataUnsafe = tg?.initDataUnsafe as unknown
+                    let firstName = ''
+                    if (initDataUnsafe && typeof initDataUnsafe === 'object') {
+                        const typed = initDataUnsafe as { user?: { first_name?: string } }
+                        if (typed.user && typeof typed.user.first_name === 'string') {
+                            firstName = typed.user.first_name
+                        }
+                    }
+
+                    setPlayerNameInitial(String(firstName).trim() || null)
+                    setShowNameModal(true)
+                    setPendingFetchAfterName(true)
+                    return
+                }
                 const data = await fetchJson<Quest[]>(`${api}/api/quests`, undefined, api)
                 setQuests(data)
             } catch (e: unknown) {
                 setError(String((e as Error)?.message || e))
+            } finally {
+                setLoading(false)
             }
         })()
     }, [api])
- 
+
     const handleQuestClick = (id: string, status: Quest['status']) => {
         // only allow navigation for available quests
         if (status !== 'available' && status !== 'in_progress') return
         router.push(`/quests?id=${id}`)
     }
- 
+
+    const savePlayerName = async (name: string) => {
+        try {
+            setLoading(true)
+            await putJson(`${api}/api/profile`, { player_name: name }, api)
+            setShowNameModal(false)
+            if (pendingFetchAfterName) {
+                // continue loading quests now that name is set
+                try {
+                    const data = await fetchJson<Quest[]>(`${api}/api/quests`, undefined, api)
+                    setQuests(data)
+                    setPendingFetchAfterName(false)
+                } catch (e: unknown) {
+                    setError(String((e as Error)?.message || e))
+                }
+            }
+        } catch (e: unknown) {
+            setError(String((e as Error)?.message || e))
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <>
             <main className="main">
                 <h1>Available Quests</h1>
-                {!quests && !error && <div className="loading">Loading quests...</div>}
+                {!quests && !error && (loading || !quests) && <div className="loading">Loading quests...</div>}
                 {error && <p style={{ color: 'crimson' }}>Error: {error}</p>}
                 {quests && (
                     <div style={{ display: 'grid', gap: 12 }}>
@@ -93,6 +143,20 @@ export default function HomePage() {
                 )}
             </main>
             <FooterNav />
+            {/* Name picker modal shown on first auth if server returned player_name === null */}
+            {showNameModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.5)', zIndex: 1200,
+                }}>
+                    <NamePicker
+                        onConfirm={savePlayerName}
+                        onCancel={() => setShowNameModal(false)}
+                        maxLength={12}
+                        initial={playerNameInitial}
+                    />
+                </div>
+            )}
         </>
     )
 }

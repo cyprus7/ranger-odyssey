@@ -79,3 +79,22 @@ export async function postJson<T = unknown>(url: string, data?: unknown, apiBase
     return res.json() as Promise<T>
 }
 
+/**
+ * Примерно то же, что и fetchJson, но для PUT-запросов.
+ * Принимает url, данные и опционально apiBase.
+ */
+export async function putJson<T = unknown>(url: string, data?: unknown, apiBase?: string): Promise<T> {
+    const res = await fetch(url, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    if (res.status === 401 && apiBase) {
+        await ensureTelegramAuth(apiBase)
+        return putJson(url, data, apiBase)
+    }
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    return res.json() as Promise<T>
+}
+
