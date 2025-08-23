@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgbot-config
+  namespace: tgbot
+data:
+  BOT_TOKEN: "change_me"
+  API_URL: "http://backend:3001/api"
+  WEBAPP_URL: "http://frontend:3000"
+  JWT_SECRET: "change_me"
+  JWT_TTL_SEC: "900"
+  PORT: "3000"
