@@ -10,8 +10,10 @@ import { HealthController } from './health.controller'
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Do not auto-launch the bot (no polling). TelegrafModule still creates the bot
+    // and wires @Update() classes, but will not call bot.launch() itself.
     TelegrafModule.forRootAsync({
-      useFactory: () => ({ token: process.env.BOT_TOKEN || '' })
+      useFactory: () => ({ token: process.env.BOT_TOKEN || '', launch: false }),
     }),
     HttpModule,
   ],

@@ -17,8 +17,9 @@ async function bootstrap() {
   if (!botToken) throw new Error('BOT_TOKEN is required')
   if (!publicBaseUrl) throw new Error('PUBLIC_BASE_URL is required for webhook mode')
 
-  // Собираем бота
-  const bot = new Telegraf(botToken)
+  // Получаем бот, созданный TelegrafModule. TelegrafModule was configured with launch: false,
+  // so it won't start polling; we reuse its bot instance to set webhook and handle updates.
+  const bot = app.get(Telegraf) as Telegraf
 
   // Регистрируем общий callback для Nest (без polling)
   const expressApp = app.getHttpAdapter().getInstance()
