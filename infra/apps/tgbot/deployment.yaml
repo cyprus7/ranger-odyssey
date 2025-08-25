@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: tgbot
-          image: ghcr.io/cyprus7/ranger-odyssey/tgbot:d864460d3ce26a75474309667a0123f622f21b47
+          image: ghcr.io/cyprus7/ranger-odyssey/tgbot:577a92107fe25acb9d42f536bfca764a0ee3997a
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
