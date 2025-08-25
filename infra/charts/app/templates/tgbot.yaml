@@ -9,8 +9,7 @@ metadata:
 spec:
   replicas: {{ .Values.tgbot.replicas | default 1 }}
   selector:
-    matchLabels:
-      app: tgbot
+    matchLabels: { app: tgbot }
   template:
     metadata:
       labels:
@@ -23,24 +22,15 @@ spec:
           image: "{{ required "set .Values.image.repository" .Values.image.repository }}/tgbot:{{ required "set .Values.image.tag" .Values.image.tag }}"
           env:
             - name: API_URL
-              value: {{ printf "https://%s%s" .Values.publicHost (default "/api" .Values.apiPath) | quote }}
+              value: {{ printf "https://%s%s" .Values.host (default "/api" .Values.apiPath) | quote }}
             - name: WEBAPP_URL
-              value: {{ printf "https://%s" .Values.publicHost | quote }}
+              value: {{ printf "https://%s" .Values.host | quote }}
             - name: BOT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: tgbot-vault-secret
-                  key: BOT_TOKEN
+              valueFrom: { secretKeyRef: { name: app-secrets, key: BOT_TOKEN } }
             - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: tgbot-vault-secret
-                  key: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_SECRET } }
             - name: JWT_TTL_SEC
-              valueFrom:
-                secretKeyRef:
-                  name: tgbot-vault-secret
-                  key: JWT_TTL_SEC
+              value: "900"
             - name: PORT
               value: "{{ .Values.tgbot.port | default 3000 }}"
           ports:
