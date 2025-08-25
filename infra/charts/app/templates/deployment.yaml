@@ -59,3 +59,36 @@ spec:
     - name: http
       port: 80
       targetPort: 3000
+---
+# New: optional tgbot deployment (uses same image repo/tag, reads secrets from app-secrets)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgbot
+spec:
+  replicas: {{ .Values.tgbot.replicas | default 1 }}
+  selector: { matchLabels: { app: tgbot } }
+  template:
+    metadata: { labels: { app: tgbot } }
+    spec:
+      containers:
+        - name: tgbot
+          image: "{{ .Values.image.repository }}/tgbot:{{ .Values.image.tag }}"
+          ports: [{ containerPort: {{ .Values.tgbot.port | default 3000 }} }]
+          env:
+            - name: BOT_TOKEN
+              valueFrom: { secretKeyRef: { name: app-secrets, key: BOT_TOKEN } }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_SECRET } }
+            - name: JWT_TTL_SEC
+              valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_TTL_SEC } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: tgbot }
+spec:
+  selector: { app: tgbot }
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.tgbot.port | default 3000 }}
