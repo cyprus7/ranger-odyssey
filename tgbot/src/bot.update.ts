@@ -35,6 +35,7 @@ export class BotUpdate {
 
   @Action('text_mode')
   async onTextMode(@Ctx() ctx: Context) {
+    console.log('Switching to text mode')
     await ctx.answerCbQuery()
     await this.sendState(ctx)
   }
