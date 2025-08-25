@@ -9,6 +9,15 @@ spec:
     - name: web
       sectionName: https
   rules:
+    # Telegram webhook -> tgbot
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /tgbot/webhook
+          method: POST
+      backendRefs:
+        - name: tgbot
+          port: 80
     - matches:
         - path:
             type: PathPrefix

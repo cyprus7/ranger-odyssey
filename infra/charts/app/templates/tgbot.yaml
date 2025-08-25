@@ -33,9 +33,28 @@ spec:
               value: "900"
             - name: PORT
               value: "{{ .Values.tgbot.port | default 3000 }}"
+            # Webhook env:
+            - name: PUBLIC_BASE_URL
+              value: {{ printf "https://%s" .Values.host | quote }}
+            - name: WEBHOOK_PATH
+              value: {{ .Values.tgbot.webhookPath | default "/tgbot/webhook" | quote }}
+            - name: TELEGRAM_SECRET_TOKEN
+              valueFrom: { secretKeyRef: { name: app-secrets, key: TELEGRAM_SECRET_TOKEN } }
           ports:
             - containerPort: {{ .Values.tgbot.port | default 3000 }}
               name: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.tgbot.port | default 3000 }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.tgbot.port | default 3000 }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
       {{- if .Values.tgbot.resources }}
       resources:
         {{- toYaml .Values.tgbot.resources | nindent 8 }}
