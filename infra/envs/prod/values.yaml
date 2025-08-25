@@ -21,3 +21,8 @@ externalSecrets:
   enabled: true
   storeName: vault-kv
   path: app/prod
+tgbot:
+  enabled: true
+  replicas: 2
+  port: 3000
+  resources: {}

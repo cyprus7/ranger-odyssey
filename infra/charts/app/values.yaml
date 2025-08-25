@@ -13,3 +13,10 @@ externalSecrets:
   enabled: false      # chart‐level default
   storeName: vault-kv
   path: ""            # must be set in env values if enabled
+
+# New: tgbot defaults
+tgbot:
+  enabled: true
+  replicas: 1
+  port: 3000
+  resources: {}
