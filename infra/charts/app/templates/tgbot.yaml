@@ -1,0 +1,67 @@
+{{- if .Values.tgbot.enabled | default true }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgbot
+  labels:
+    app.kubernetes.io/name: tgbot
+    app.kubernetes.io/component: bot
+spec:
+  replicas: {{ .Values.tgbot.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: tgbot
+  template:
+    metadata:
+      labels:
+        app: tgbot
+        app.kubernetes.io/name: tgbot
+        app.kubernetes.io/component: bot
+    spec:
+      containers:
+        - name: tgbot
+          image: "{{ required "set .Values.image.repository" .Values.image.repository }}/tgbot:{{ required "set .Values.image.tag" .Values.image.tag }}"
+          env:
+            - name: API_URL
+              value: {{ printf "https://%s%s" .Values.publicHost (default "/api" .Values.apiPath) | quote }}
+            - name: WEBAPP_URL
+              value: {{ printf "https://%s" .Values.publicHost | quote }}
+            - name: BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tgbot-vault-secret
+                  key: BOT_TOKEN
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tgbot-vault-secret
+                  key: JWT_SECRET
+            - name: JWT_TTL_SEC
+              valueFrom:
+                secretKeyRef:
+                  name: tgbot-vault-secret
+                  key: JWT_TTL_SEC
+            - name: PORT
+              value: "{{ .Values.tgbot.port | default 3000 }}"
+          ports:
+            - containerPort: {{ .Values.tgbot.port | default 3000 }}
+              name: http
+      {{- if .Values.tgbot.resources }}
+      resources:
+        {{- toYaml .Values.tgbot.resources | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tgbot
+  labels:
+    app.kubernetes.io/name: tgbot
+spec:
+  selector:
+    app: tgbot
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.tgbot.port | default 3000 }}
+{{- end }}

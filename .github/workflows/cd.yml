@@ -23,9 +23,12 @@ jobs:
           docker build -t ghcr.io/${{ github.repository }}/backend:${{ github.sha }} ./backend
           docker build -t ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} ./frontend
           docker build -t ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }} ./stub_tg_link
+          # build & push tgbot image
+          docker build -t ghcr.io/${{ github.repository }}/tgbot:${{ github.sha }} ./tgbot
           docker push ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
           docker push ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
           docker push ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/tgbot:${{ github.sha }}
 
       - name: Bump image tag in Helm values (env) and update stub deployment image
         run: |
@@ -38,6 +41,11 @@ jobs:
           NEW_IMAGE="ghcr.io/${{ github.repository }}/stub_tg_link:${{ github.sha }}"
           if [ -f infra/apps/stub_tg_link/deployment.yaml ]; then
             sed -i -E "s|image:\s*ghcr\.io/.*/stub_tg_link:.*|image: ${NEW_IMAGE}|g" infra/apps/stub_tg_link/deployment.yaml
+          fi
+          # обновим образ для tgbot (чтобы Argo увидел новое)
+          NEW_IMAGE_TGBOT="ghcr.io/${{ github.repository }}/tgbot:${{ github.sha }}"
+          if [ -f infra/apps/tgbot/deployment.yaml ]; then
+            sed -i -E "s|image:\s*ghcr\.io/.*/tgbot:.*|image: ${NEW_IMAGE_TGBOT}|g" infra/apps/tgbot/deployment.yaml
           fi
 
       - name: Commit & push
