@@ -18,33 +18,20 @@ async function bootstrap() {
   if (!botToken) throw new Error('BOT_TOKEN is required')
   if (!publicBaseUrl) throw new Error('PUBLIC_BASE_URL is required for webhook mode')
 
-  // Попытка получить бот, созданный TelegrafModule.
-  let bot: Telegraf<Context> | null = null
-  try {
-    bot = app.get(Telegraf) as Telegraf<Context>
-  } catch {
-    bot = null
-  }
+  // Всегда создаём локальный Telegraf и привязываем обработчики из BotUpdate.
+  const botUpdate = app.get(BotUpdate)
+  const bot = new Telegraf<Context>(botToken)
 
-  // Если провайдера нет — создаём Telegraf вручную и привязываем обработчики
-  if (!bot) {
-    const botUpdate = app.get(BotUpdate)
-    const localBot = new Telegraf<Context>(botToken)
-
-    // Регистрируем основные обработчики, использующие методы BotUpdate.
-    // Это минимальный набор: start и callback actions (text_mode, choice:...).
-    localBot.start(async (ctx) => {
-      try { await botUpdate.onStart(ctx) } catch { /* ignore */ }
-    })
-    localBot.action('text_mode', async (ctx) => {
-      try { await botUpdate.onTextMode(ctx) } catch { /* ignore */ }
-    })
-    localBot.action(/choice:.+/, async (ctx) => {
-      try { await botUpdate.onChoice(ctx) } catch { /* ignore */ }
-    })
-
-    bot = localBot
-  }
+  // Регистрируем основные обработчики, использующие методы BotUpdate.
+  bot.start(async (ctx) => {
+    try { await botUpdate.onStart(ctx) } catch { /* ignore */ }
+  })
+  bot.action('text_mode', async (ctx) => {
+    try { await botUpdate.onTextMode(ctx) } catch { /* ignore */ }
+  })
+  bot.action(/choice:.+/, async (ctx) => {
+    try { await botUpdate.onChoice(ctx) } catch { /* ignore */ }
+  })
 
   // Регистрируем общий callback для Nest (без polling)
   const expressApp = app.getHttpAdapter().getInstance()
@@ -52,7 +39,7 @@ async function bootstrap() {
     if (secret && req.get('x-telegram-bot-api-secret-token') !== secret) {
       return res.sendStatus(401)
     }
-    bot!.handleUpdate(req.body, res)
+    bot.handleUpdate(req.body, res)
   })
 
   // Устанавливаем webhook в Telegram
@@ -61,7 +48,7 @@ async function bootstrap() {
 
   // Корректное завершение работы
   const shutdown = async () => {
-    try { await bot!.telegram.deleteWebhook() } catch {}
+    try { await bot.telegram.deleteWebhook() } catch {}
     process.exit(0)
   }
   process.on('SIGTERM', shutdown)
