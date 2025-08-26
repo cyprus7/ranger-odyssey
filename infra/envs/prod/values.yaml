@@ -13,10 +13,22 @@ app:
   canary: false
 frontend:
   replicas: 2
-  resources: {}
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
 backend:
   replicas: 2
-  resources: {}
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
 externalSecrets:
   enabled: true
   storeName: vault-kv
@@ -25,4 +37,10 @@ tgbot:
   enabled: true
   replicas: 2
   port: 3000
-  resources: {}
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
