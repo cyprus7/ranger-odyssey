@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/cyprus7/ranger-odyssey
-  tag: e77074cb2ed60da428dfa27f7481c3412899f1af
+  tag: 80a16445c42950739f246ec746a17add807eeda2
 host: quests.tmbot.cc
 tlsSecretName: quests-tmbot-cc-tls
 apiPath: /api
@@ -15,20 +15,20 @@ frontend:
   replicas: 2
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "100m"
+      memory: 128Mi
+      cpu: 100m
     limits:
-      memory: "256Mi"
-      cpu: "500m"
+      memory: 256Mi
+      cpu: 500m
 backend:
   replicas: 2
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "100m"
+      memory: 128Mi
+      cpu: 100m
     limits:
-      memory: "256Mi"
-      cpu: "500m"
+      memory: 256Mi
+      cpu: 500m
 externalSecrets:
   enabled: true
   storeName: vault-kv
@@ -39,8 +39,8 @@ tgbot:
   port: 3000
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "100m"
+      memory: 128Mi
+      cpu: 100m
     limits:
-      memory: "256Mi"
-      cpu: "500m"
+      memory: 256Mi
+      cpu: 500m
