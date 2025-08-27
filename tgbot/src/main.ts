@@ -44,15 +44,19 @@ async function bootstrap() {
 
   // Устанавливаем webhook в Telegram
   const fullWebhookUrl = `${publicBaseUrl}${webhookPath}`
-  await bot.telegram.setWebhook(fullWebhookUrl, { secret_token: secret })
+  const info = await bot.telegram.getWebhookInfo()
+
+  if (info.url !== fullWebhookUrl) {
+    await bot.telegram.setWebhook(fullWebhookUrl, { secret_token: secret })
+  }
 
   // Корректное завершение работы
-  const shutdown = async () => {
-    try { await bot.telegram.deleteWebhook() } catch {}
-    process.exit(0)
-  }
-  process.on('SIGTERM', shutdown)
-  process.on('SIGINT', shutdown)
+  // const shutdown = async () => {
+  //   try { await bot.telegram.deleteWebhook() } catch {}
+  //   process.exit(0)
+  // }
+  // process.on('SIGTERM', shutdown)
+  // process.on('SIGINT', shutdown)
 
   await app.listen(3000)
   Logger.log(`Webhook set at ${fullWebhookUrl} and listening on port 3000`)
