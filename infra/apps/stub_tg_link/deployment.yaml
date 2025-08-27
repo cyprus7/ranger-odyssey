@@ -18,7 +18,7 @@ spec:
       containers:
         - name: stub-tg-link
           # default image; CI will replace tag to the commit SHA on push
-          image: ghcr.io/cyprus7/ranger-odyssey/stub_tg_link:714a25589b3eefc761bc5e156a3550a2b0498a11
+          image: ghcr.io/cyprus7/ranger-odyssey/stub_tg_link:31d4597e1eefa92051c96bf9575dcc3e49214f39
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
