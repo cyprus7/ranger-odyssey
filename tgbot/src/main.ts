@@ -48,9 +48,9 @@ async function bootstrap() {
 
   console.log(info)
 
-  if (info.url !== fullWebhookUrl) {
-    await bot.telegram.setWebhook(fullWebhookUrl, { secret_token: secret })
-  }
+  // if (info.url !== fullWebhookUrl) {
+  //   await bot.telegram.setWebhook(fullWebhookUrl, { secret_token: secret })
+  // }
 
   // Корректное завершение работы
   // const shutdown = async () => {
