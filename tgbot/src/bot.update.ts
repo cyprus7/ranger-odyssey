@@ -1,4 +1,4 @@
-import { Update, Start, Ctx, Action } from 'nestjs-telegraf'
+import { Update, Start, Ctx, Action, Command } from 'nestjs-telegraf'
 import { Context, Markup } from 'telegraf'
 import { ApiService } from './services/api.service'
 import { ConfigService } from '@nestjs/config'
@@ -87,6 +87,7 @@ export class BotUpdate {
   }
 
   // ====== /help ======
+  @Command('help')
   async onHelp(@Ctx() ctx: Context) {
     const webAppUrl = this.config.get<string>('WEBAPP_URL')
     const kb = webAppUrl
@@ -99,6 +100,7 @@ export class BotUpdate {
   }
 
   // ====== /reset ======
+  @Command('reset')
   async onReset(@Ctx() ctx: Context) {
     const userId = String(ctx.from?.id)
     try {
@@ -112,6 +114,7 @@ export class BotUpdate {
   }
 
   // ====== /lang ======
+  @Command('lang')
   async onLang(@Ctx() ctx: Context) {
     const kb = Markup.inlineKeyboard([
       [Markup.button.callback('Русский', 'lang:ru'), Markup.button.callback('English', 'lang:en')],
@@ -137,6 +140,7 @@ export class BotUpdate {
   }
 
   // ====== /support ======
+  @Command('support')
   async onSupport(@Ctx() ctx: Context) {
     const url = this.config.get<string>('SUPPORT_URL')
     const uname = this.config.get<string>('SUPPORT_USERNAME')

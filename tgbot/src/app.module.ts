@@ -14,7 +14,22 @@ import { I18nService } from './i18n/i18n.service'
     // Do not auto-launch the bot (no polling). TelegrafModule still creates the bot
     // and wires @Update() classes, but will not call bot.launch() itself.
     TelegrafModule.forRootAsync({
-      useFactory: () => ({ token: process.env.BOT_TOKEN || '', launch: false }),
+      useFactory: () => {
+        const token = process.env.BOT_TOKEN || ''
+        if (!token) {
+          throw new Error('Bot Token is required')
+        }
+        return {
+          token,
+          launchOptions: {
+            webhook: {
+              domain: process.env.PUBLIC_BASE_URL || undefined,
+              hookPath: process.env.WEBHOOK_PATH || '/tgbot/webhook',
+              secretToken: process.env.TELEGRAM_SECRET_TOKEN || undefined,
+            },
+          },
+        }
+      },
     }),
     HttpModule,
   ],
