@@ -6,6 +6,7 @@ import { BotUpdate } from './bot.update'
 import { ApiService } from './services/api.service'
 import { JwtService } from './services/jwt.service'
 import { HealthController } from './health.controller'
+import { I18nService } from './i18n/i18n.service'
 
 @Module({
   imports: [
@@ -18,6 +19,6 @@ import { HealthController } from './health.controller'
     HttpModule,
   ],
   controllers: [HealthController],
-  providers: [BotUpdate, ApiService, JwtService],
+  providers: [BotUpdate, ApiService, JwtService, I18nService],
 })
 export class AppModule {}

@@ -46,6 +46,8 @@ async function bootstrap() {
   const fullWebhookUrl = `${publicBaseUrl}${webhookPath}`
   const info = await bot.telegram.getWebhookInfo()
 
+  console.log(info)
+
   if (info.url !== fullWebhookUrl) {
     await bot.telegram.setWebhook(fullWebhookUrl, { secret_token: secret })
   }
