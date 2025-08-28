@@ -14,8 +14,24 @@ export class TraceContextInterceptor implements NestInterceptor {
         const baseLogger: pino.Logger = req.log // Request-scoped pino child
         // Генерим стабильный trace_id и корневой span_id (hex без дефисов)
         const genHex = () => randomUUID().replace(/-/g, '')
-        const trace_id = String((req.headers['trace-id'] as string) || req.id || genHex()).replace(/-/g, '')
-        const span_id  = String((req.headers['span-id']  as string) || req.id || genHex()).replace(/-/g, '')
+
+        // validate candidate id: reject purely-numeric strings (likely user ids).
+        const normalizeCandidate = (val: unknown): string | null => {
+            if (!val) return null
+            const s = String(val).trim()
+            if (!s) return null
+            // If value is purely digits (e.g. user id) — treat as invalid for trace id
+            if (/^\d+$/.test(s)) return null
+            // remove hyphens to have compact hex-like id
+            return s.replace(/-/g, '')
+        }
+
+        const hdrTrace = normalizeCandidate(req.headers['trace-id'])
+        const hdrXReq  = normalizeCandidate(req.headers['x-request-id'])
+        const reqIdCand = normalizeCandidate(req.id)
+
+        const trace_id = hdrTrace || hdrXReq || reqIdCand || genHex()
+        const span_id  = genHex()
 
         const loggerWithContext = baseLogger.child({ trace_id, span_id })
         req.logger  = loggerWithContext // alias для удобства
@@ -23,7 +39,7 @@ export class TraceContextInterceptor implements NestInterceptor {
         req.span_id  = span_id
 
         res.setHeader('trace-id', trace_id)
-        res.setHeader('x-request-id', req.id)
+        if (req.id) res.setHeader('x-request-id', req.id)
 
         const started = Date.now()
         return next.handle().pipe(

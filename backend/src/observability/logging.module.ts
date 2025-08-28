@@ -21,10 +21,19 @@ const baseLogger = pino({
                 // ВАЖНО: передаём ИМЕННО инстанс, не объект опций
                 logger: baseLogger,
 
-                genReqId: (req) =>
-                    (req.headers['trace-id'] as string) ||
-          (req.headers['x-request-id'] as string) ||
-          randomUUID(),
+                // Validate header values: ignore purely-numeric values (likely user ids).
+                genReqId: (req) => {
+                    const normalize = (v: unknown): string | null => {
+                        if (!v) return null
+                        const s = String(v).trim()
+                        if (!s) return null
+                        if (/^\d+$/.test(s)) return null // reject numeric-only
+                        return s
+                    }
+                    const hdrTrace = normalize(req.headers['trace-id'])
+                    const hdrXReq  = normalize(req.headers['x-request-id'])
+                    return hdrTrace || hdrXReq || randomUUID()
+                },
 
                 customLogLevel: (req, res, err) => {
                     if (err || res.statusCode >= 500) return 'error'
