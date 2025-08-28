@@ -4,6 +4,8 @@ import * as jwt from 'jsonwebtoken'
 import { db } from '../db/drizzle-client'
 import { accountLinks, profiles } from '../db/schema'
 import { and, eq } from 'drizzle-orm'
+import type pino from 'pino'
+import { withSpan } from '../observability/span'
 
 type TelegramUser = { id: number; username?: string; first_name?: string; last_name?: string }
 
@@ -87,7 +89,9 @@ export class AuthService {
 
     async handleTelegramAuth(
         initData: string,
-        _opts?: { startParamRaw?: string }
+        _opts?: { startParamRaw?: string },
+        logger?: pino.Logger,
+        trace_id?: string,
     ) {
         const valid = this.validateInitData(initData)
         if (!valid) throw new UnauthorizedException('invalid initData')
@@ -100,31 +104,39 @@ export class AuthService {
         if (startPayload && (startPayload.site_id || startPayload.siteId) && (startPayload.user_id || startPayload.userId)) {
             const siteId = String(startPayload.site_id ?? startPayload.siteId)
             siteUserId = String(startPayload.user_id ?? startPayload.userId)
-            await db.insert(accountLinks)
-                .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
-                .onConflictDoUpdate({
-                    target: [accountLinks.telegramUserId, accountLinks.siteId],
-                    set: { siteUserId, updatedAt: new Date() },
-                })
+            await withSpan(logger, trace_id ?? tgUserId, 'postgres.upsert_account_link', async () => {
+                await db.insert(accountLinks)
+                    .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
+                    .onConflictDoUpdate({
+                        target: [accountLinks.telegramUserId, accountLinks.siteId],
+                        set: { siteUserId, updatedAt: new Date() },
+                    })
+                return undefined
+            }, { dep: 'postgres' })
 
             // Ensure a profiles row exists for this site user and update minimal fields.
-            await db.insert(profiles).values({
-                userId: siteUserId,
-                playerName: null,
-                mainType: null,
-                mainPsychotype: null,
-                confidence: '0',
-                inventory: JSON.stringify([]),
-                tags: JSON.stringify({}),
-                stats: JSON.stringify({}),
-            }).onConflictDoUpdate({
-                target: [profiles.userId],
-                // Do not overwrite existing playerName on conflict — only touch updatedAt (keep prior playerName)
-                set: { updatedAt: new Date() },
-            })
+            await withSpan(logger, trace_id ?? tgUserId, 'postgres.upsert_profile', async () => {
+                await db.insert(profiles).values({
+                    userId: siteUserId,
+                    playerName: null,
+                    mainType: null,
+                    mainPsychotype: null,
+                    confidence: '0',
+                    inventory: JSON.stringify([]),
+                    tags: JSON.stringify({}),
+                    stats: JSON.stringify({}),
+                }).onConflictDoUpdate({
+                    target: [profiles.userId],
+                    // Do not overwrite existing playerName on conflict — only touch updatedAt (keep prior playerName)
+                    set: { updatedAt: new Date() },
+                })
+                return undefined
+            }, { dep: 'postgres' })
 
             // Load profile to obtain internal UUID (typed)
-            const prow = await db.select().from(profiles).where(eq(profiles.userId, siteUserId)).limit(1)
+            const prow = await withSpan(logger, trace_id ?? tgUserId, 'postgres.select_profile_by_user', async () => {
+                return db.select().from(profiles).where(eq(profiles.userId, siteUserId!)).limit(1)
+            }, { dep: 'postgres' })
             const pRow = prow[0] ?? null
             if (pRow && typeof (pRow as { id?: unknown }).id === 'string') {
                 profileId = (pRow as { id?: string }).id as string
@@ -142,14 +154,18 @@ export class AuthService {
         let playerName: string | null = null
         try {
             if (profileId) {
-                const rows = await db.select().from(profiles).where(eq(profiles.id, profileId)).limit(1)
+                const rows = await withSpan(logger, trace_id ?? (siteUserId ?? tgUserId), 'postgres.select_profile_by_id', async () => {
+                    return db.select().from(profiles).where(eq(profiles.id, profileId!)).limit(1)
+                }, { dep: 'postgres' })
                 const row = rows[0] ?? null
                 if (row && typeof (row as { playerName?: unknown }).playerName === 'string') {
                     const pn = (row as { playerName?: string }).playerName
                     if (pn) playerName = pn
                 }
             } else if (siteUserId) {
-                const rows = await db.select().from(profiles).where(eq(profiles.userId, siteUserId)).limit(1)
+                const rows = await withSpan(logger, trace_id ?? siteUserId, 'postgres.select_profile_by_user', async () => {
+                    return db.select().from(profiles).where(eq(profiles.userId, siteUserId!)).limit(1)
+                }, { dep: 'postgres' })
                 const row = rows[0] ?? null
                 if (row && typeof (row as { playerName?: unknown }).playerName === 'string') {
                     const pn = (row as { playerName?: string }).playerName

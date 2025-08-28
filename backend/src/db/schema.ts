@@ -85,6 +85,7 @@ export const profiles = pgTable(
         inventory: jsonb('inventory'), // JSONB: список {id, qty}
         tags: jsonb('tags'), // JSONB: объект тегов
         stats: jsonb('stats'), // JSONB: доп. статистика, напр. { xp: 20 }
+        lang: text('lang'), // NEW: optional language field
         createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     },

@@ -27,6 +27,7 @@ type Profile = {
   confidence?: number
   inventory?: InventoryItem[]
   stats?: Record<string, number>
+  lang?: string
 }
 
 export default function QuestsPage() {

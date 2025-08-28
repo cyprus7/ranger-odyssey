@@ -4,9 +4,17 @@ import { HealthController } from './health.controller'
 import { ObservabilityLoggingModule } from './observability/logging.module'
 import { RequestLoggerAliasMiddleware } from './observability/request-logger-alias.middleware'
 import { AuthModule } from './auth/auth.module'
+import { RewardsModule } from './rewards/rewards.module'
+import { ProfileModule } from './profile/profile.module'
 
 @Module({
-    imports: [ObservabilityLoggingModule, AuthModule, QuestsModule],
+    imports: [
+        ObservabilityLoggingModule,
+        AuthModule,
+        QuestsModule,
+        RewardsModule,
+        ProfileModule,
+    ],
     controllers: [HealthController],
 })
 export class AppModule {

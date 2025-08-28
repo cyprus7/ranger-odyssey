@@ -1,7 +1,8 @@
-import { Body, Controller, Post, Res, BadRequestException } from '@nestjs/common'
+import { Body, Controller, Post, Res, BadRequestException, Req } from '@nestjs/common'
 import type { Response } from 'express'
 import { AuthService } from './auth.service'
 import { PinoLogger } from 'nestjs-pino'
+import type pino from 'pino'
 
 interface TelegramAuthRequest {
     initData: string;
@@ -21,6 +22,7 @@ export class AuthController {
     async telegram(
         @Body() body: TelegramAuthRequest,
         @Res({ passthrough: true }) res: Response,
+        @Req() req: { logger?: pino.Logger; trace_id?: string },
     ) {
         const { initData, startParamRaw } = body
         if (!initData) throw new BadRequestException('initData required')
@@ -29,6 +31,8 @@ export class AuthController {
             const { jwt, maxAgeMs, player_name } = await this.auth.handleTelegramAuth(
                 initData,
                 { startParamRaw },
+                req.logger,
+                req.trace_id,
             )
             res.cookie(
                 process.env.COOKIE_NAME ?? 'app_access',

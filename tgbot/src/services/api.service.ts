@@ -53,7 +53,7 @@ export class ApiService {
 
   // Установка языка пользователя
   async setLanguage(userId: string, lang: string, ctx?: Context) {
-    const res = await axios.put(`${this.baseUrl}/users/language`, { lang }, { headers: this.headers(userId, ctx) })
+    const res = await axios.put(`${this.baseUrl}/profile`, { lang }, { headers: this.headers(userId, ctx) })
     return { data: res.data, lang: this.pickLang(res) }
   }
 
@@ -69,7 +69,7 @@ export class ApiService {
 
   // Получить профиль (актуальный язык после /lang)
   async getProfile(userId: string, ctx?: Context) {
-    const res = await axios.get(`${this.baseUrl}/users/profile`, { headers: this.headers(userId, ctx) })
+    const res = await axios.get(`${this.baseUrl}/api/profile`, { headers: this.headers(userId, ctx) })
     return { data: res.data, lang: this.pickLang(res) }
   }
 }
