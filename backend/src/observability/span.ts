@@ -21,19 +21,41 @@ export function startSpan(
 }
 
 export async function withSpan<T>(
-    logger: pino.Logger,
+    logger: pino.Logger | undefined,
     trace_id: string,
     name: string,
     fn: () => Promise<T>,
-    extra: Record<string, unknown> = {}
+    opts?: Record<string, unknown>
 ): Promise<T> {
-    const { end } = startSpan(logger, trace_id, name, extra)
+    const spanLogger = logger && typeof logger.child === 'function' ? logger.child({ span: name }) : console
+    const start = Date.now()
+    const isPino = spanLogger !== console
+
+    const logInfo = (obj: Record<string, unknown>, msg: string) => {
+        if (isPino) {
+            (spanLogger as pino.Logger).info(obj, msg)
+        } else {
+            console.info(msg, obj)
+        }
+    }
+
+    const logError = (obj: Record<string, unknown>, msg: string) => {
+        if (isPino) {
+            (spanLogger as pino.Logger).error(obj, msg)
+        } else {
+            console.error(msg, obj)
+        }
+    }
+
     try {
-        const res = await fn()
-        end({ status: 'ok' })
-        return res
-    } catch (err) {
-        end({ status: 'error', err: String(err) })
-        throw err
+        logInfo({ trace_id, ...opts }, `Starting span: ${name}`)
+        const result = await fn()
+        const duration = Date.now() - start
+        logInfo({ trace_id, duration, ...opts }, `Completed span: ${name}`)
+        return result
+    } catch (error: unknown) {
+        const duration = Date.now() - start
+        logError({ trace_id, duration, err: error, ...opts }, `Failed span: ${name}`)
+        throw error
     }
 }
