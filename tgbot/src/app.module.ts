@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TelegrafModule } from 'nestjs-telegraf'
-import { HttpModule } from '@nestjs/axios'
 import { BotUpdate } from './bot.update'
 import { ApiService } from './services/api.service'
 import { JwtService } from './services/jwt.service'
@@ -31,9 +30,10 @@ import { I18nService } from './i18n/i18n.service'
         }
       },
     }),
-    HttpModule,
   ],
   controllers: [HealthController],
   providers: [BotUpdate, ApiService, JwtService, I18nService],
+})
+export class AppModule {}
 })
 export class AppModule {}

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import axios, { AxiosResponse } from 'axios'
 import { JwtService } from './jwt.service'
 import { Context } from 'telegraf'
 import { I18nService } from '../i18n/i18n.service'
@@ -32,10 +31,9 @@ export class ApiService {
     }
   }
 
-  private pickLang(res: AxiosResponse): string | undefined {
-    const data = res.data as ApiResponseData
+  private async pickLang(res: Response, data: ApiResponseData): Promise<string | undefined> {
     return (
-      res.headers['content-language'] as string ||
+      res.headers.get('content-language') ||
       data?.user?.lang ||
       data?.profile?.lang ||
       data?.lang ||
@@ -44,32 +42,58 @@ export class ApiService {
   }
 
   async getQuestState(userId: string, ctx?: Context) {
-    const res = await axios.get(`${this.baseUrl}/quests/state`, { headers: this.headers(userId, ctx) })
-    return { data: res.data, lang: this.pickLang(res) }
+    const res = await fetch(`${this.baseUrl}/quests/state`, { headers: this.headers(userId, ctx) })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return { data, lang: await this.pickLang(res, data) }
   }
 
   async makeChoice(userId: string, choiceId: string, ctx?: Context) {
-    const res = await axios.put(`${this.baseUrl}/quests/choice`, { choiceId }, { headers: this.headers(userId, ctx) })
-    return { data: res.data, lang: this.pickLang(res) }
+    const res = await fetch(`${this.baseUrl}/quests/choice`, {
+      method: 'PUT',
+      headers: { ...this.headers(userId, ctx), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choiceId })
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return { data, lang: await this.pickLang(res, data) }
   }
 
   // Сброс прогресса квеста
   async resetQuest(userId: string, ctx?: Context) {
-    const res = await axios.post(`${this.baseUrl}/quests/reset`, {}, { headers: this.headers(userId, ctx) })
-    return { data: res.data, lang: this.pickLang(res) }
+    const res = await fetch(`${this.baseUrl}/quests/reset`, {
+      method: 'POST',
+      headers: { ...this.headers(userId, ctx), 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return { data, lang: await this.pickLang(res, data) }
   }
 
   // Установка языка пользователя
   async setLanguage(userId: string, lang: string, ctx?: Context) {
-    const res = await axios.put(`${this.baseUrl}/profile`, { lang }, { headers: this.headers(userId, ctx) })
-    return { data: res.data, lang: this.pickLang(res) }
+    const res = await fetch(`${this.baseUrl}/profile`, {
+      method: 'PUT',
+      headers: { ...this.headers(userId, ctx), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang })
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return { data, lang: await this.pickLang(res, data) }
   }
 
   // Инициализация профиля языком Телеграма (upsert, язык ставить только если пусто на бэке)
   async initProfile(userId: string, lang?: string, ctx?: Context) {
     try {
-      const res = await axios.post(`${this.baseUrl}/users/profile/init`, { lang }, { headers: this.headers(userId, ctx) })
-      return { data: res.data, lang: this.pickLang(res) }
+      const res = await fetch(`${this.baseUrl}/users/profile/init`, {
+        method: 'POST',
+        headers: { ...this.headers(userId, ctx), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return { data, lang: await this.pickLang(res, data) }
     } catch {
       return { data: undefined, lang: undefined }
     }
@@ -77,7 +101,9 @@ export class ApiService {
 
   // Получить профиль (актуальный язык после /lang)
   async getProfile(userId: string, ctx?: Context) {
-    const res = await axios.get(`${this.baseUrl}/api/profile`, { headers: this.headers(userId, ctx) })
-    return { data: res.data, lang: this.pickLang(res) }
+    const res = await fetch(`${this.baseUrl}/api/profile`, { headers: this.headers(userId, ctx) })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return { data, lang: await this.pickLang(res, data) }
   }
 }
