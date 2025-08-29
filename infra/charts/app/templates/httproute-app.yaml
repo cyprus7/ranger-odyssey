@@ -32,6 +32,8 @@ spec:
       backendRefs:
         - name: api
           port: 9464
+        - name: tgbot
+          port: 9464
     - matches:
         - path:
             type: PathPrefix

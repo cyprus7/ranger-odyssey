@@ -40,9 +40,25 @@ spec:
               value: {{ .Values.tgbot.webhookPath | default "/tgbot/webhook" | quote }}
             - name: TELEGRAM_SECRET_TOKEN
               valueFrom: { secretKeyRef: { name: app-secrets, key: TELEGRAM_SECRET_TOKEN } }
+            - name: OTEL_METRICS_EXPORTER
+              value: "prometheus"
+            - name: OTEL_PROM_PORT
+              value: "9464"
+            - name: OTEL_PROM_ENDPOINT
+              value: "/metrics"
+            - name: OTEL_SERVICE_NAME
+              value: "tgbot"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.version={{ .Values.image.tag }},deployment.environment={{ .Release.Namespace }},service.namespace={{ .Release.Namespace }},service.instance.id=$(HOSTNAME)"
+            - name: OTEL_TRACES_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
           ports:
             - containerPort: {{ .Values.tgbot.port | default 3000 }}
               name: http
+            - containerPort: 9464
+              name: metrics
           livenessProbe:
             httpGet:
               path: /health
@@ -66,6 +82,10 @@ metadata:
   name: tgbot
   labels:
     app.kubernetes.io/name: tgbot
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9464"
 spec:
   selector:
     app: tgbot
@@ -73,4 +93,7 @@ spec:
     - name: http
       port: 80
       targetPort: {{ .Values.tgbot.port | default 3000 }}
+    - name: metrics
+      port: 9464
+      targetPort: 9464
 {{- end }}

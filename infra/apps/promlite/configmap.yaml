@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prom-lite-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 30s
+
+    # Скрейп по аннотациям сервисов (namespace=prod)
+    scrape_configs:
+      - job_name: kubernetes-annotated
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: ["prod"]
+        relabel_configs:
+          # включены только сервисы с prometheus.io/scrape="true"
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          # путь /metrics (можно переопределять аннотацией)
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: "(.+)"
+          # порт берём из аннотации
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: "(.+)"
+            replacement: "$${1}"
+          # адрес = <pod_ip>:<port>
+          - source_labels: [__meta_kubernetes_pod_ip, __address__]
+            action: replace
+            target_label: __address__
+            regex: "([^;]+);(.+)"
+            replacement: "$${1}:$${2}"
+          # удобные лейблы
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: service
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name, __meta_kubernetes_service_label_app]
+            target_label: job
+            regex: "(.+)"
+
+      # сам prom-lite (по желанию)
+      - job_name: prom-lite
+        static_configs:
+          - targets: ['localhost:9090']

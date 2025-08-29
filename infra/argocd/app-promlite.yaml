@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prom-lite
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/cyprus7/ranger-odyssey.git'
+    targetRevision: HEAD
+    path: infra/apps/promlite
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-lite
+  namespace: monitoring
+  labels: { app: prom-lite }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: prom-lite } }
+  template:
+    metadata:
+      labels: { app: prom-lite }
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.54.1
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.retention.time=3d
+            - --web.enable-lifecycle
+          ports:
+            - containerPort: 9090
+              name: http
+          volumeMounts:
+            - name: cfg
+              mountPath: /etc/prometheus
+      volumes:
+        - name: cfg
+          configMap:
+            name: prom-lite-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
