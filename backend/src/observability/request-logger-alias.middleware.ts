@@ -6,12 +6,14 @@ import { trace } from '@opentelemetry/api'
 @Injectable()
 export class RequestLoggerAliasMiddleware implements NestMiddleware {
     use(req: Request & { log?: pino.Logger; id?: string }, res: Response, next: NextFunction) {
-        req.logger = req.log as pino.Logger // Alias for compatibility
+        if (req.log) {
+            req.logger = req.log as pino.Logger // Alias for compatibility
 
-        const span = trace.getActiveSpan()
-        if (span) {
-            const ctx = span.spanContext()
-            req.logger = req.logger.child({ trace_id: ctx.traceId, span_id: ctx.spanId })
+            const span = trace.getActiveSpan()
+            if (span) {
+                const ctx = span.spanContext()
+                req.logger = req.logger.child({ trace_id: ctx.traceId, span_id: ctx.spanId })
+            }
         }
 
         if (req.id) {

@@ -8,10 +8,13 @@ import { trace } from '@opentelemetry/api'
 @Injectable()
 export class TraceContextInterceptor implements NestInterceptor {
     intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-        const req = context.switchToHttp().getRequest<Request & { log: pino.Logger; id?: string; trace_id?: string; span_id?: string }>()
+        const req = context.switchToHttp().getRequest<Request & { log?: pino.Logger; id?: string; trace_id?: string; span_id?: string }>()
         const res = context.switchToHttp().getResponse<Response>()
 
-        const baseLogger: pino.Logger = req.log // Request-scoped pino child
+        const baseLogger = req.log
+        if (!baseLogger) {
+            return next.handle()
+        }
         // OTel handles trace_id/span_id automatically via mixin in logging.module.ts
         const span = trace.getActiveSpan()
         const trace_id = span ? span.spanContext().traceId : req.id || 'unknown'
