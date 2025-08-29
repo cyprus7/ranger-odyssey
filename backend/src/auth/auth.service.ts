@@ -5,7 +5,7 @@ import { db } from '../db/drizzle-client'
 import { accountLinks, profiles } from '../db/schema'
 import { and, eq } from 'drizzle-orm'
 import type pino from 'pino'
-import { withSpan } from '../observability/span'
+import { withOtelSpan } from '../observability/otel-helpers'
 
 type TelegramUser = { id: number; username?: string; first_name?: string; last_name?: string }
 
@@ -90,8 +90,6 @@ export class AuthService {
     async handleTelegramAuth(
         initData: string,
         _opts?: { startParamRaw?: string },
-        logger?: pino.Logger,
-        trace_id?: string,
     ) {
         const valid = this.validateInitData(initData)
         if (!valid) throw new UnauthorizedException('invalid initData')
@@ -104,7 +102,7 @@ export class AuthService {
         if (startPayload && (startPayload.site_id || startPayload.siteId) && (startPayload.user_id || startPayload.userId)) {
             const siteId = String(startPayload.site_id ?? startPayload.siteId)
             siteUserId = String(startPayload.user_id ?? startPayload.userId)
-            await withSpan(logger, trace_id ?? tgUserId, 'postgres.upsert_account_link', async () => {
+            await withOtelSpan('postgres.upsert_account_link', async () => {
                 await db.insert(accountLinks)
                     .values({ telegramUserId: BigInt(tgUserId), siteId, siteUserId })
                     .onConflictDoUpdate({
@@ -115,7 +113,7 @@ export class AuthService {
             }, { dep: 'postgres' })
 
             // Ensure a profiles row exists for this site user and update minimal fields.
-            await withSpan(logger, trace_id ?? tgUserId, 'postgres.upsert_profile', async () => {
+            await withOtelSpan('postgres.upsert_profile', async () => {
                 await db.insert(profiles).values({
                     userId: siteUserId,
                     playerName: null,
@@ -134,7 +132,7 @@ export class AuthService {
             }, { dep: 'postgres' })
 
             // Load profile to obtain internal UUID (typed)
-            const prow = await withSpan(logger, trace_id ?? tgUserId, 'postgres.select_profile_by_user', async () => {
+            const prow = await withOtelSpan('postgres.select_profile_by_user', async () => {
                 return db.select().from(profiles).where(eq(profiles.userId, siteUserId!)).limit(1)
             }, { dep: 'postgres' })
             const pRow = prow[0] ?? null
@@ -154,7 +152,7 @@ export class AuthService {
         let playerName: string | null = null
         try {
             if (profileId) {
-                const rows = await withSpan(logger, trace_id ?? (siteUserId ?? tgUserId), 'postgres.select_profile_by_id', async () => {
+                const rows = await withOtelSpan('postgres.select_profile_by_id', async () => {
                     return db.select().from(profiles).where(eq(profiles.id, profileId!)).limit(1)
                 }, { dep: 'postgres' })
                 const row = rows[0] ?? null
@@ -163,7 +161,7 @@ export class AuthService {
                     if (pn) playerName = pn
                 }
             } else if (siteUserId) {
-                const rows = await withSpan(logger, trace_id ?? siteUserId, 'postgres.select_profile_by_user', async () => {
+                const rows = await withOtelSpan('postgres.select_profile_by_user', async () => {
                     return db.select().from(profiles).where(eq(profiles.userId, siteUserId!)).limit(1)
                 }, { dep: 'postgres' })
                 const row = rows[0] ?? null
@@ -172,7 +170,7 @@ export class AuthService {
                     if (pn) playerName = pn
                 }
             }
-        } catch {
+        } catch (err: unknown) {
             playerName = null
         }
         

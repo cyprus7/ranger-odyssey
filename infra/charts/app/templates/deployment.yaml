@@ -11,7 +11,9 @@ spec:
       containers:
         - name: api
           image: "{{ .Values.image.repository }}/backend:{{ .Values.image.tag }}"
-          ports: [{ containerPort: 3001 }]
+          ports:
+            - containerPort: 3001
+            - containerPort: 9464
           env:
             - name: POSTGRES_URL
               valueFrom: { secretKeyRef: { name: app-secrets, key: POSTGRES_URL } }
@@ -21,6 +23,20 @@ spec:
               valueFrom: { secretKeyRef: { name: app-secrets, key: BOT_TOKEN } }
             - name: JWT_SECRET
               valueFrom: { secretKeyRef: { name: app-secrets, key: JWT_SECRET } }
+            - name: OTEL_METRICS_EXPORTER
+              value: "prometheus"
+            - name: OTEL_PROM_PORT
+              value: "9464"
+            - name: OTEL_PROM_ENDPOINT
+              value: "/metrics"
+            - name: OTEL_SERVICE_NAME
+              value: "api"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.version={{ .Values.image.tag }},deployment.environment={{ .Release.Namespace }},service.namespace={{ .Release.Namespace }},service.instance.id=$(HOSTNAME)"
+            - name: OTEL_TRACES_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
 ---
 apiVersion: v1
 kind: Service
@@ -31,3 +47,6 @@ spec:
     - name: http
       port: 80
       targetPort: 3001
+    - name: metrics
+      port: 9464
+      targetPort: 9464

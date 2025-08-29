@@ -3,9 +3,16 @@ import { Module } from '@nestjs/common'
 import { LoggerModule } from 'nestjs-pino'
 import { randomUUID } from 'crypto'
 import pino from 'pino'
+import { trace } from '@opentelemetry/api'
 
 const baseLogger = pino({
     level: process.env.LOG_LEVEL || 'info',
+    mixin() {
+        const span = trace.getActiveSpan()
+        if (!span) return {}
+        const ctx = span.spanContext()
+        return { trace_id: ctx.traceId, span_id: ctx.spanId }
+    },
     // аналог useLevelLabels: пишем текстовый уровень в поле "level"
     formatters: {
         level(label) {

@@ -17,7 +17,7 @@ export class RewardsController {
     @Get()
     @UseGuards(JwtAuthGuard)
     async getRewards(@CurrentUserId() id: string, @Req() req: { logger?: pino.Logger; trace_id?: string }) {
-        const rewards = await this.service.getAllForUser(id, req.logger, req.trace_id)
+        const rewards = await this.service.getAll(id, req.logger, req.trace_id)
         this.logger.info({ id, rewards }, 'Returned rewards')
         return rewards
     }

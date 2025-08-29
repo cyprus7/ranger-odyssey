@@ -31,8 +31,6 @@ export class AuthController {
             const { jwt, maxAgeMs, player_name } = await this.auth.handleTelegramAuth(
                 initData,
                 { startParamRaw },
-                req.logger,
-                req.trace_id,
             )
             res.cookie(
                 process.env.COOKIE_NAME ?? 'app_access',

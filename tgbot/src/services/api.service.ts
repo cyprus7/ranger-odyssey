@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 import { JwtService } from './jwt.service'
 import { Context } from 'telegraf'
 import { I18nService } from '../i18n/i18n.service'
@@ -25,12 +25,12 @@ export class ApiService {
     }
   }
 
-  private pickLang(res: { headers?: any; data?: any }) {
+  private pickLang(res: AxiosResponse): string | undefined {
     return (
-      res?.headers?.['content-language'] ||
-      res?.data?.user?.lang ||
-      res?.data?.profile?.lang ||
-      res?.data?.lang ||
+      res.headers['content-language'] as string ||
+      (res.data as Record<string, unknown>)?.user?.lang as string ||
+      (res.data as Record<string, unknown>)?.profile?.lang as string ||
+      (res.data as Record<string, unknown>)?.lang as string ||
       undefined
     )
   }

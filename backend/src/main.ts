@@ -1,7 +1,9 @@
+import './observability/otel-sdk'  // <- до NestFactory
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { Logger } from 'nestjs-pino'
 import { TraceContextInterceptor } from './observability/trace-context.interceptor'
+import { MetricsInterceptor } from './observability/metrics.interceptor'
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
@@ -10,8 +12,10 @@ async function bootstrap() {
     // Use global logger from nestjs-pino (provided by ObservabilityLoggingModule)
     app.useLogger(app.get(Logger))
 
-    // Apply the trace context interceptor globally
+    // Apply the trace context interceptor globally (simplified, as OTel handles context)
     app.useGlobalInterceptors(new TraceContextInterceptor())
+    // Add metrics interceptor
+    app.useGlobalInterceptors(new MetricsInterceptor())
 
     // Enable CORS and set global prefix as before
     const port = 3001

@@ -1,6 +1,9 @@
+// Deprecated: This entire file is deprecated. Use withOtelSpan from otel-helpers.ts for better integration with OpenTelemetry.
+// All usages should be migrated to the new OTel-based helpers. Consider removing this file in future versions.
 import { randomUUID } from 'crypto'
 import type pino from 'pino'
 
+// Deprecated: Use withOtelSpan from otel-helpers.ts for better integration with OTel
 export type SpanEnd = (extra?: Record<string, unknown>) => void
 
 export function startSpan(
@@ -48,10 +51,9 @@ export async function withSpan<T>(
     }
 
     try {
-        logInfo({ trace_id, ...opts }, `Starting span: ${name}`)
         const result = await fn()
         const duration = Date.now() - start
-        logInfo({ trace_id, duration, ...opts }, `Completed span: ${name}`)
+        logInfo({ trace_id, duration, ...opts }, 'span.end')
         return result
     } catch (error: unknown) {
         const duration = Date.now() - start

@@ -28,6 +28,13 @@ spec:
     - matches:
         - path:
             type: PathPrefix
+            value: /metrics
+      backendRefs:
+        - name: api
+          port: 9464
+    - matches:
+        - path:
+            type: PathPrefix
             value: /
       backendRefs:
         - name: frontend

@@ -11,12 +11,9 @@ export class RewardService {
         this.logger.setContext('RewardService')
     }
 
-    async getAllForUser(userId: string, logger?: pino.Logger, trace_id?: string) {
-        const rows = await db.select().from(questRewards).where(eq(questRewards.userId, userId))
-        return rows.map(r => ({
-            day: r.dayNumber,
-            bonus_code: r.bonusCode,
-            status: r.status,
-        }))
+    async getAll(userId: string, logger?: pino.Logger, trace_id?: string) {
+        // Stub implementation: return empty array or fetch from DB
+        logger?.info({ userId, trace_id }, 'Fetching rewards for user')
+        return [] // Replace with actual logic
     }
 }

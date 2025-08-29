@@ -6,7 +6,7 @@ import { questDays, questProgress } from '../db/schema'
 import { db } from '../db/drizzle-client'
 import { and, eq } from 'drizzle-orm'
 import type pino from 'pino'
-import { withSpan } from '../observability/span'
+import { withOtelSpan } from '../observability/otel-helpers'
 
 
 interface Card {
@@ -38,7 +38,7 @@ export class QuestsService {
 
     async list(userId: string, logger?: pino.Logger, trace_id?: string) {
         // Получаем все дни и весь прогресс пользователя
-        const days = await withSpan(logger, trace_id ?? userId, 'postgres.select_days', () =>
+        const days = await withOtelSpan('postgres.select_days', () =>
             db.select().from(questDays).where(eq(questDays.isActive, true)).orderBy(questDays.dayNumber),
         { dep: 'postgres' }
         )
@@ -51,7 +51,7 @@ export class QuestsService {
         // const progressRows = await db.select().from(questProgress).where(eq(questProgress.userId, userId))
 
         // Для примера:
-        const userProgress = await withSpan(logger, trace_id ?? userId, 'postgres.select_user_progress', () =>
+        const userProgress = await withOtelSpan('postgres.select_user_progress', () =>
             db.select().from(questProgress).where(eq(questProgress.userId, userId)),
         { dep: 'postgres' }
         )
@@ -77,13 +77,13 @@ export class QuestsService {
 
     async getQuestState(userId: string, logger?: pino.Logger, trace_id?: string) {
         let dayNumber = 1
-        let questState: QuestProgressRow = await withSpan(logger, trace_id ?? userId, 'store.startIfNeeded', () =>
+        let questState: QuestProgressRow = await withOtelSpan('store.startIfNeeded', () =>
             this.progressStore.startIfNeeded(userId, dayNumber),
         { dep: 'postgres' }
         )
         while (questState.status !== 'in_progress') {
             dayNumber++
-            questState = await withSpan(logger, trace_id ?? userId, 'store.startIfNeeded', () =>
+            questState = await withOtelSpan('store.startIfNeeded', () =>
                 this.progressStore.startIfNeeded(userId, dayNumber),
             { dep: 'postgres' }
             )
@@ -101,7 +101,7 @@ export class QuestsService {
 
         if (!currentSceneId) {
             currentSceneId = sceneContainer.cards?.[0]?.id
-            await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+            await withOtelSpan('store.setChoice', () =>
                 this.progressStore.setChoice(userId, dayNumber, null, { currentSceneId }),
             { dep: 'postgres' }
             )
@@ -129,13 +129,13 @@ export class QuestsService {
 
     async processChoice(userId: string, choiceId: string, logger?: pino.Logger, trace_id?: string) {
         let dayNumber = 1
-        let questState: QuestProgressRow = await withSpan(logger, trace_id ?? userId, 'store.startIfNeeded', () =>
+        let questState: QuestProgressRow = await withOtelSpan('store.startIfNeeded', () =>
             this.progressStore.startIfNeeded(userId, dayNumber),
         { dep: 'postgres' }
         )
         while (questState.status !== 'in_progress') {
             dayNumber++
-            questState = await withSpan(logger, trace_id ?? userId, 'store.startIfNeeded', () =>
+            questState = await withOtelSpan('store.startIfNeeded', () =>
                 this.progressStore.startIfNeeded(userId, dayNumber),
             { dep: 'postgres' }
             )
@@ -159,11 +159,11 @@ export class QuestsService {
         if (!currentScene) {
             const nextDay = await this.getQuestDay(dayNumber + 1, logger, trace_id ?? userId)
             if (nextDay) {
-                await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+                await withOtelSpan('store.setChoice', () =>
                     this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null }),
                 { dep: 'postgres' }
                 )
-                await withSpan(logger, trace_id ?? userId, 'store.complete', () =>
+                await withOtelSpan('store.complete', () =>
                     this.progressStore.complete(userId, dayNumber),
                 { dep: 'postgres' }
                 )
@@ -180,11 +180,11 @@ export class QuestsService {
         // Если у выбранного варианта нет поля `next` — это конец дня.
         // Сохраняем выбор и переводим день в completed, затем возвращаем новое состояние.
         if (!nextScene.next) {
-            await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+            await withOtelSpan('store.setChoice', () =>
                 this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null }),
             { dep: 'postgres' }
             )
-            await withSpan(logger, trace_id ?? userId, 'store.complete', () =>
+            await withOtelSpan('store.complete', () =>
                 this.progressStore.complete(userId, dayNumber),
             { dep: 'postgres' }
             )
@@ -195,7 +195,7 @@ export class QuestsService {
         // Если target сцена принадлежит текущему дню — обычный переход
         const targetInCurrent = sceneContainer.scenes?.some(s => s.id === targetSceneId)
         if (targetInCurrent) {
-            await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+            await withOtelSpan('store.setChoice', () =>
                 this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: targetSceneId }),
             { dep: 'postgres' }
             )
@@ -209,21 +209,21 @@ export class QuestsService {
             const targetInNext = nextContainer.scenes?.some(s => s.id === targetSceneId)
             if (targetInNext) {
                 // Сохраняем выбор текущего дня, помечаем его completed
-                await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+                await withOtelSpan('store.setChoice', () =>
                     this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null }),
                 { dep: 'postgres' }
                 )
-                await withSpan(logger, trace_id ?? userId, 'store.complete', () =>
+                await withOtelSpan('store.complete', () =>
                     this.progressStore.complete(userId, dayNumber),
                 { dep: 'postgres' }
                 )
 
                 // Инициализируем следующий день и выставляем в его state нужную сцену
-                await withSpan(logger, trace_id ?? userId, 'store.startIfNeeded', () =>
+                await withOtelSpan('store.startIfNeeded', () =>
                     this.progressStore.startIfNeeded(userId, dayNumber + 1),
                 { dep: 'postgres' }
                 )
-                await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+                await withOtelSpan('store.setChoice', () =>
                     this.progressStore.setChoice(userId, dayNumber + 1, null, { currentSceneId: targetSceneId }),
                 { dep: 'postgres' }
                 )
@@ -232,11 +232,11 @@ export class QuestsService {
         }
 
         // Не нашли target ни в текущем, ни в следующем дне — безопасно завершить текущий день
-        await withSpan(logger, trace_id ?? userId, 'store.setChoice', () =>
+        await withOtelSpan('store.setChoice', () =>
             this.progressStore.setChoice(userId, dayNumber, choiceId, { currentSceneId: null }),
         { dep: 'postgres' }
         )
-        await withSpan(logger, trace_id ?? userId, 'store.complete', () =>
+        await withOtelSpan('store.complete', () =>
             this.progressStore.complete(userId, dayNumber),
         { dep: 'postgres' }
         )
@@ -244,19 +244,22 @@ export class QuestsService {
     }
 
     async getRewards(userId: string, logger?: pino.Logger, trace_id?: string) {
-        return this.rewards.getAllForUser(userId, logger, trace_id)
+        return this.rewards.getAll(userId, logger, trace_id)
     }
 
     async resetQuest(userId: string, logger?: pino.Logger, trace_id?: string) {
         // Reset quest progress by deleting all entries for the user
-        await db.delete(questProgress).where(eq(questProgress.userId, userId))
+        await withOtelSpan('postgres.delete_user_progress', () =>
+            db.delete(questProgress).where(eq(questProgress.userId, userId)),
+        { dep: 'postgres' }
+        )
         // Then return the initial state
         return this.getQuestState(userId, logger, trace_id)
     }
 
     // Вспомогательные методы
     private async getQuestDay(dayNumber: number, logger?: pino.Logger, trace_id?: string) {
-        const days = await withSpan(logger, trace_id ?? String(dayNumber), 'postgres.select_day', () =>
+        const days = await withOtelSpan('postgres.select_day', () =>
             db.select().from(questDays).where(and(eq(questDays.isActive, true), eq(questDays.dayNumber, dayNumber))),
         { dep: 'postgres' }
         )

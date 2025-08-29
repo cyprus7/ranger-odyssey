@@ -3,7 +3,7 @@ import { Observable } from 'rxjs'
 import { tap } from 'rxjs/operators'
 import type { Request, Response } from 'express'
 import type pino from 'pino'
-import { randomUUID } from 'crypto'
+import { trace } from '@opentelemetry/api'
 
 @Injectable()
 export class TraceContextInterceptor implements NestInterceptor {
@@ -12,26 +12,10 @@ export class TraceContextInterceptor implements NestInterceptor {
         const res = context.switchToHttp().getResponse<Response>()
 
         const baseLogger: pino.Logger = req.log // Request-scoped pino child
-        // Генерим стабильный trace_id и корневой span_id (hex без дефисов)
-        const genHex = () => randomUUID().replace(/-/g, '')
-
-        // validate candidate id: reject purely-numeric strings (likely user ids).
-        const normalizeCandidate = (val: unknown): string | null => {
-            if (!val) return null
-            const s = String(val).trim()
-            if (!s) return null
-            // If value is purely digits (e.g. user id) — treat as invalid for trace id
-            if (/^\d+$/.test(s)) return null
-            // remove hyphens to have compact hex-like id
-            return s.replace(/-/g, '')
-        }
-
-        const hdrTrace = normalizeCandidate(req.headers['trace-id'])
-        const hdrXReq  = normalizeCandidate(req.headers['x-request-id'])
-        const reqIdCand = normalizeCandidate(req.id)
-
-        const trace_id = hdrTrace || hdrXReq || reqIdCand || genHex()
-        const span_id  = genHex()
+        // OTel handles trace_id/span_id automatically via mixin in logging.module.ts
+        const span = trace.getActiveSpan()
+        const trace_id = span ? span.spanContext().traceId : req.id || 'unknown'
+        const span_id = span ? span.spanContext().spanId : 'unknown'
 
         const loggerWithContext = baseLogger.child({ trace_id, span_id })
         req.logger  = loggerWithContext // alias для удобства
