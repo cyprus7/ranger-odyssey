@@ -5,6 +5,13 @@ import { JwtService } from './jwt.service'
 import { Context } from 'telegraf'
 import { I18nService } from '../i18n/i18n.service'
 
+type ApiResponseData = {
+  user?: { lang?: string }
+  profile?: { lang?: string }
+  lang?: string
+  [key: string]: unknown
+}
+
 @Injectable()
 export class ApiService {
   private readonly baseUrl: string
@@ -26,11 +33,12 @@ export class ApiService {
   }
 
   private pickLang(res: AxiosResponse): string | undefined {
+    const data = res.data as ApiResponseData
     return (
       res.headers['content-language'] as string ||
-      (res.data as Record<string, unknown>)?.user?.lang as string ||
-      (res.data as Record<string, unknown>)?.profile?.lang as string ||
-      (res.data as Record<string, unknown>)?.lang as string ||
+      data?.user?.lang ||
+      data?.profile?.lang ||
+      data?.lang ||
       undefined
     )
   }
