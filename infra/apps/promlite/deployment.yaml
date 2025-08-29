@@ -11,6 +11,7 @@ spec:
     metadata:
       labels: { app: prom-lite }
     spec:
+      serviceAccountName: prom-lite
       containers:
         - name: prometheus
           image: prom/prometheus:v2.54.1
