@@ -26,7 +26,7 @@ const metricReader =
           exportIntervalMillis: 15_000,
       })
 
-// --- NodeSDK (ветка 0.203.x использует metricReader, не metrics:{...}) ---
+// --- NodeSDK
 const sdk = new NodeSDK({
     traceExporter,
     metricReader,

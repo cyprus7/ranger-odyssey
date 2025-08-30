@@ -24,8 +24,10 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger))
 
-  // app.useGlobalInterceptors(new TraceContextInterceptor())
-  app.useGlobalInterceptors(new MetricsInterceptor())
+  app.useGlobalInterceptors(
+    new TraceContextInterceptor(),
+    new MetricsInterceptor(),
+  )
 
   await app.listen(process.env.PORT || 3000)
   const logger = app.get(Logger)
