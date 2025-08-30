@@ -1,6 +1,5 @@
 // This file provides OpenTelemetry-based helpers to replace deprecated custom span functions.
 // Use withOtelSpan for wrapping async operations with automatic tracing and error handling.
-// No deprecated APIs are used here; all based on stable OTel SDK.
 import { trace, SpanStatusCode } from '@opentelemetry/api'
 const tracer = trace.getTracer('quests')
 

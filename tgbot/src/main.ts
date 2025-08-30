@@ -24,7 +24,7 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger))
 
-  app.useGlobalInterceptors(new TraceContextInterceptor())
+  // app.useGlobalInterceptors(new TraceContextInterceptor())
   app.useGlobalInterceptors(new MetricsInterceptor())
 
   await app.listen(process.env.PORT || 3000)

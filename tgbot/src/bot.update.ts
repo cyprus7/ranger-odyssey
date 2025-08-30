@@ -54,7 +54,6 @@ export class BotUpdate {
   @Action('text_mode')
   async onTextMode(@Ctx() ctx: Context) {
     return withOtelSpan('onTextMode', async () => {
-      this.logger.info('Switching to text mode')
       await ctx.answerCbQuery()
       await this.sendState(ctx)
     }, { userId: String(ctx.from?.id) })

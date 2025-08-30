@@ -4,7 +4,6 @@ import * as jwt from 'jsonwebtoken'
 import { db } from '../db/drizzle-client'
 import { accountLinks, profiles } from '../db/schema'
 import { and, eq } from 'drizzle-orm'
-import type pino from 'pino'
 import { withOtelSpan } from '../observability/otel-helpers'
 
 type TelegramUser = { id: number; username?: string; first_name?: string; last_name?: string }
